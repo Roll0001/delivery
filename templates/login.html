@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+
+{% block title %}Вхід{% endblock %}
+
+{% block content %}
+<div class="auth-layout">
+   
+    <div class="auth-form-panel">
+        <h2>Вхід в акаунт</h2>
+        <p class="auth-subtitle">Введіть свої дані для продовження.</p>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.non_field_errors }}
+        {% for field in form %}
+            <div>
+                <label for="{{ field.id_for_label }}">{% if field.label == 'Username' %}Ім'я та прізвище{% else %}{{ field.label }}{% endif %}</label>
+                {{ field }}
+                {% if field.errors %}
+                    <div style="color: #b91c1c; font-size: 0.9rem;">{{ field.errors }}</div>
+                {% endif %}
+            </div>
+        {% endfor %}
+        <button type="submit">Увійти</button>
+    </form>
+        <p class="auth-switch">Ще не маєте акаунта? <a href="/auth/register/">Зареєструватися</a></p>
+    </div>
+</div>
+{% endblock %}

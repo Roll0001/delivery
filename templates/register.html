@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+
+{% block title %}Реєстрація{% endblock %}
+
+{% block content %}
+<style>
+    .password-field {
+        display: flex;
+        align-items: stretch;
+        gap: 8px;
+    }
+    .password-field input {
+        flex: 1;
+        min-width: 0;
+    }
+    .password-field .password-toggle {
+        width: auto;
+        min-height: 46px;
+        margin-top: 0;
+        padding: 10px 14px;
+        background: #e2e8f0;
+        color: #1e293b;
+        white-space: nowrap;
+    }
+
+
+    
+</style>
+<div class="auth-layout">
+
+    <div class="auth-form-panel">
+        <h2>Реєстрація</h2>
+        <p class="auth-subtitle">Це займе лише кілька хвилин.</p>
+    <form method="post" novalidate>
+        {% csrf_token %}
+        {{ form.non_field_errors }}
+        {% for field in form %}
+            <div>
+                <label for="{{ field.id_for_label }}">{% if field.name == 'first_name' %}Ім'я{% elif field.name == 'last_name' %}Прізвище{% else %}{{ field.label }}{% endif %}</label>
+                {% if field.name == 'password1' or field.name == 'password2' %}
+                    <div class="password-field">
+                        {{ field }}
+                        <button type="button" class="password-toggle" data-password-target="{{ field.id_for_label }}" aria-label="Показати пароль">Показати</button>
+                    </div>
+                {% else %}
+                    {{ field }}
+                {% endif %}
+                {% if field.help_text %}
+                    <small style="color: #64748b; display: block; margin-top: 4px;">{{ field.help_text }}</small>
+                {% endif %}
+                {% if field.errors %}
+                    <div style="color: #b91c1c; font-size: 0.9rem; margin-top: 6px;">{{ field.errors }}</div>
+                {% endif %}
+            </div>
+        {% endfor %}
+        <button type="submit">Зареєструватися</button>
+    </form>
+        <p class="auth-switch">Вже маєте акаунт? <a href="/auth/login/">Увійти</a></p>
+    </div>
+</div>
+<script>
+    document.querySelectorAll('.password-toggle').forEach(function (toggle) {
+        toggle.addEventListener('click', function () {
+            const passwordInput = document.getElementById(toggle.dataset.passwordTarget);
+            const isHidden = passwordInput.type === 'password';
+            passwordInput.type = isHidden ? 'text' : 'password';
+            toggle.textContent = isHidden ? 'Приховати' : 'Показати';
+            toggle.setAttribute('aria-label', isHidden ? 'Приховати пароль' : 'Показати пароль');
+        });
+    });
+</script>
+{% endblock %}
