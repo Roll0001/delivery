@@ -1,0 +1,60 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>{% block title %}Nosh{% endblock %} · Nosh</title>
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+	<style>
+		:root { --ink:#17251f; --muted:#738078; --paper:#f8f6f0; --cream:#fffdf8; --green:#1f5944; --lime:#d9ed87; --line:#e4e5dc; --coral:#e97751; }
+		* { box-sizing:border-box; }
+		body { margin:0; color:var(--ink); background:var(--paper); font-family:'DM Sans',sans-serif; }
+		a { color:inherit; text-decoration:none; }
+		.site-header { display:flex; align-items:center; justify-content:space-between; max-width:1240px; margin:auto; padding:24px 32px; }
+		.brand { font:700 28px 'Playfair Display',serif; letter-spacing:-.5px; }
+		.brand span { color:var(--coral); }
+		.nav { display:flex; align-items:center; gap:25px; font-size:14px; font-weight:600; }
+		.nav-link { color:var(--muted); } .nav-link:hover { color:var(--ink); }
+		.nav-button, .button { display:inline-flex; align-items:center; justify-content:center; border:0; border-radius:6px; padding:13px 19px; background:var(--green); color:white; font:600 14px 'DM Sans'; cursor:pointer; transition:transform .2s, background .2s; }
+		.nav-button:hover, .button:hover { background:#164431; transform:translateY(-2px); }
+		main { min-height:calc(100vh - 82px); }
+		.auth-page { min-height:calc(100vh - 82px); display:grid; grid-template-columns:minmax(300px, 1fr) minmax(340px, 560px); max-width:1240px; margin:auto; padding:35px 32px 70px; gap:70px; align-items:center; }
+		.auth-intro { padding:30px 0; } .eyebrow { color:var(--coral); text-transform:uppercase; letter-spacing:2px; font-size:11px; font-weight:700; }
+		h1, h2 { font-family:'Playfair Display',serif; letter-spacing:-1.6px; line-height:1.06; margin:12px 0 18px; }
+		.auth-intro h1 { font-size:clamp(44px, 6vw, 74px); max-width:500px; } .auth-intro p { color:var(--muted); max-width:390px; line-height:1.7; }
+		.intro-mark { margin-top:55px; width:155px; height:155px; border-radius:50%; background:var(--lime); display:grid; place-items:center; font-size:68px; transform:rotate(-10deg); }
+		.auth-form-panel { background:var(--cream); border:1px solid var(--line); padding:38px; box-shadow:12px 14px 0 #e9e5d8; }
+		.auth-form-panel h2 { font-size:36px; margin-top:0; } .auth-subtitle { color:var(--muted); margin:0 0 28px; }
+		form > div { margin-bottom:17px; } label { display:block; margin-bottom:7px; font-size:13px; font-weight:700; }
+		input, textarea, select { width:100%; border:1px solid #d5dbd1; border-radius:4px; padding:13px 14px; background:#fff; color:var(--ink); font:15px 'DM Sans'; outline:none; }
+		input:focus { border-color:var(--green); box-shadow:0 0 0 3px #dcebdc; } .auth-form-panel form > button { width:100%; margin-top:8px; }
+		.auth-switch { text-align:center; color:var(--muted); font-size:14px; margin:24px 0 0; } .auth-switch a { color:var(--green); font-weight:700; }
+		.errorlist { list-style:none; padding:0; margin:6px 0 0; color:#b44932; font-size:12px; }
+		.password-field { display:flex; gap:8px; } .password-field .password-toggle { width:auto; margin:0; background:#edf0e8; color:var(--ink); white-space:nowrap; }
+		.home-hero { max-width:1240px; margin:auto; padding:55px 32px 60px; display:grid; grid-template-columns:1.1fr .9fr; gap:50px; align-items:center; }
+		.home-hero h1 { font-size:clamp(48px, 6.3vw, 88px); max-width:680px; margin:14px 0 20px; } .home-hero p { color:var(--muted); font-size:17px; line-height:1.6; max-width:520px; }
+		.search { display:flex; gap:8px; margin-top:28px; max-width:540px; } .search input { border-color:var(--ink); } .search button { border:0; padding:0 22px; }
+		.hero-art { min-height:370px; background:var(--green); position:relative; overflow:hidden; display:grid; place-items:center; }
+		.hero-art:before { content:''; width:270px; height:270px; border-radius:50%; background:var(--lime); position:absolute; right:15%; top:12%; } .hero-art:after { content:'🍜'; position:relative; font-size:145px; z-index:1; transform:rotate(-9deg); }
+		.section { max-width:1240px; margin:auto; padding:20px 32px 75px; } .section-head { display:flex; align-items:end; justify-content:space-between; border-bottom:1px solid var(--line); padding-bottom:16px; margin-bottom:25px; } .section h2 { font-size:38px; margin:0; }
+		.restaurant-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:18px; } .restaurant-card { background:var(--cream); border:1px solid var(--line); min-height:265px; display:flex; flex-direction:column; }
+		.restaurant-image { height:145px; background:#dfe8d6; overflow:hidden; } .restaurant-image img { width:100%; height:100%; object-fit:cover; } .restaurant-placeholder { height:100%; display:grid; place-items:center; font-size:53px; }
+		.restaurant-copy { padding:17px 18px; } .restaurant-copy h3 { margin:0 0 7px; font:700 22px 'Playfair Display'; } .restaurant-copy p { margin:0; color:var(--muted); font-size:13px; }
+		.empty { color:var(--muted); padding:30px 0; }
+		@media (max-width:800px) { .site-header { padding:19px 20px; } .nav { gap:12px; } .nav-link { display:none; } .auth-page, .home-hero { grid-template-columns:1fr; padding:30px 20px 55px; gap:25px; } .auth-intro { padding:0; } .intro-mark { display:none; } .auth-form-panel { padding:25px 20px; } .home-hero h1 { font-size:56px; } .hero-art { min-height:240px; } .restaurant-grid { grid-template-columns:1fr; } .section { padding:15px 20px 50px; } }
+	</style>
+</head>
+<body>
+	<header class="site-header">
+		<a class="brand" href="{% url 'home' %}">YourProducts<span>.</span></a>
+		<nav class="nav">
+			<a class="nav-link" href="{% url 'home' %}#restaurants">Ресторани</a>
+			{% if user.is_authenticated %}<a class="nav-link" href="{% url 'logout' %}">Вийти</a>{% else %}<a class="nav-link" href="{% url 'login' %}">Увійти</a><a class="nav-button" href="{% url 'register' %}">Створити акаунт</a>{% endif %}
+		</nav>
+	</header>
+	<main>{% block content %}{% endblock %}</main>
+</body>
+</html>

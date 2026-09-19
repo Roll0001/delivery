@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block title %}Їжа поруч{% endblock %}
+
+{% block content %}
+<section class="home-hero">
+	<div>
+		<div class="eyebrow">Їжа, яку хочеться повторити</div>
+		<h1>Смачне вже<br>по дорозі.</h1>
+		<p>Обирайте улюблені страви з найкращих ресторанів вашого міста. Швидко, просто і з турботою.</p>
+		<form class="search" method="get">
+			<input type="search" name="q" value="{{ query }}" placeholder="Пошук ресторану або адреси" aria-label="Пошук ресторану">
+			<button class="button" type="submit">Знайти</button>
+		</form>
+	</div>
+	<div class="hero-art" aria-hidden="true"></div>
+</section>
+<section class="section" id="restaurants">
+	<div class="section-head"><h2>Ресторани поруч</h2><span class="eyebrow">{{ restaurants|length }} місць</span></div>
+	<div class="restaurant-grid">
+		{% for restaurant in restaurants %}
+			<article class="restaurant-card">
+				<div class="restaurant-image">{% if restaurant.photo %}<img src="{{ restaurant.photo.url }}" alt="{{ restaurant.name }}">{% else %}<div class="restaurant-placeholder">🍽️</div>{% endif %}</div>
+				<div class="restaurant-copy"><h3>{{ restaurant.name }}</h3><p>{{ restaurant.address }} · {{ restaurant.opening_hours }}</p></div>
+                <a class="hero-btn primary" href="menu/{{ restaurant.id }}">Переглянути вільні місця</a>
+            </article>
+		{% empty %}<p class="empty">Поки що ресторанів немає. Спробуйте інший пошук або додайте перший ресторан через адмінпанель.</p>{% endfor %}
+	</div>
+</section>
+{% endblock %}
