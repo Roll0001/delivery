@@ -1,18 +1,18 @@
 {% extends 'base.html' %}
 
-{% block title %}Додати страву{% endblock %}
+{% block title %}Додати ресторан{% endblock %}
 
 {% block content %}
 <div class="auth-page">
     <div class="auth-intro">
-        <div class="eyebrow">Меню</div>
-        <h1>Додайте<br>нову страву<br>до меню.</h1>
-        <p>Заповніть склад, вагу, час приготування та ціну для вашого ресторану.</p>
-        <div class="intro-mark" aria-hidden="true">🍲</div>
+        <div class="eyebrow">Новий заклад</div>
+        <h1>Додайте<br>інформацію<br>про ресторан.</h1>
+        <p>Заповніть основні дані про заклад, адресу, контакт та години роботи.</p>
+        <div class="intro-mark" aria-hidden="true">📍</div>
     </div>
 
     <div class="auth-form-panel">
-        <h2>Додати страву</h2>
+        <h2>Інформація про ресторан</h2>
         <form method="post" enctype="multipart/form-data">
             {% csrf_token %}
             {% for field in form %}
@@ -24,7 +24,7 @@
                     {% endif %}
                 </div>
             {% endfor %}
-            <button type="submit">Додати до меню</button>
+            <button type="submit">Зберегти ресторан</button>
         </form>
     </div>
 </div>

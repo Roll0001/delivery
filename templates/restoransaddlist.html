@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+
+{% block title %}Заявки ресторанів{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="section-head">
+        <h2>Заявки на реєстрацію ресторанів</h2>
+    </div>
+
+    {% if applications %}
+        <div class="restaurant-grid" style="grid-template-columns:1fr;">
+            {% for app in applications %}
+                <article class="restaurant-card" style="padding:18px; min-height:auto;">
+                    <div class="restaurant-copy">
+                        <h3>{{ app.name }}</h3>
+                        <p><strong>Контакт:</strong> {{ app.contact_name }}</p>
+                        <p><strong>Телефон:</strong> {{ app.phone_number }}</p>
+                        <p><strong>Email:</strong> {{ app.email|default:'—' }}</p>
+                        <p><strong>Адреса:</strong> {{ app.address }}</p>
+                        <p><strong>Години:</strong> {{ app.opening_hours }}</p>
+                        <p><strong>Статус:</strong> {{ app.get_status_display }}</p>
+                    </div>
+                    {% if app.status == 'pending' %}
+                        <div style="display:flex; gap:12px; margin-top:16px;">
+                            <a class="hero-btn primary" href="{% url 'approve_restaurant_request' app.id %}">Схвалити</a>
+                            <a class="hero-btn secondary" href="{% url 'reject_restaurant_request' app.id %}">Відхилити</a>
+                        </div>
+                    {% endif %}
+                </article>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="empty">Наразі немає заявок на реєстрацію.</p>
+    {% endif %}
+</section>
+{% endblock %}

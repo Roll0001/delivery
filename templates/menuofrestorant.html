@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ restaurant.name }}{% endblock %}
+
+{% block content %}
+<section class="menu-page">
+    <div class="menu-hero">
+        <div>
+            <div class="eyebrow">Ресторан</div>
+            <h1>{{ restaurant.name }}</h1>
+            <p>{{ restaurant.address }}</p>
+            <div class="menu-meta">
+                <span class="meta-pill">📍 {{ restaurant.address }}</span>
+                <span class="meta-pill">🕒 {{ restaurant.opening_hours }}</span>
+                <span class="meta-pill">📞 {{ restaurant.phone_number }}</span>
+            </div>
+        </div>
+        <div>
+            {% if restaurant.photo %}
+                <img src="{{ restaurant.photo.url }}" alt="{{ restaurant.name }}">
+            {% else %}
+                <div class="restaurant-placeholder" style="height:290px; border-radius:18px; background:#dfe8d6; display:grid; place-items:center; font-size:76px;">🍽️</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="section-head" style="margin-top:34px;">
+        <h2>Меню</h2>
+        <a class="hero-btn secondary" href="{% url 'home' %}">← Назад</a>
+    </div>
+
+    <div class="menu-grid">
+        {% for dish in dishes %}
+            <article class="dish-card">
+                {% if dish.photo %}
+                    <img src="{{ dish.photo.url }}" alt="{{ dish.name }}">
+                {% else %}
+                    <div style="height:180px; display:grid; place-items:center; background:#edf2e8; font-size:64px;">🍲</div>
+                {% endif %}
+                <div class="dish-body">
+                    <div class="dish-head">
+                        <h3>{{ dish.name }}</h3>
+                        <span class="price">{{ dish.price }} ₴</span>
+                    </div>
+                    <p>{{ dish.ingridients }}</p>
+                    <p><strong>Вага:</strong> {{ dish.weight }} г</p>
+                    <p><strong>Готується:</strong> {{ dish.time_to_cook }} хв</p>
+                </div>
+            </article>
+        {% empty %}
+            <p class="empty">У цього ресторану поки немає страв у меню.</p>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

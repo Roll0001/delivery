@@ -22,7 +22,7 @@
 			<article class="restaurant-card">
 				<div class="restaurant-image">{% if restaurant.photo %}<img src="{{ restaurant.photo.url }}" alt="{{ restaurant.name }}">{% else %}<div class="restaurant-placeholder">🍽️</div>{% endif %}</div>
 				<div class="restaurant-copy"><h3>{{ restaurant.name }}</h3><p>{{ restaurant.address }} · {{ restaurant.opening_hours }}</p></div>
-                <a class="hero-btn primary" href="menu/{{ restaurant.id }}">Переглянути вільні місця</a>
+                <a class="hero-btn primary" href="{% url 'restaurant_menu' restaurant.id %}">Переглянути меню</a>
             </article>
 		{% empty %}<p class="empty">Поки що ресторанів немає. Спробуйте інший пошук або додайте перший ресторан через адмінпанель.</p>{% endfor %}
 	</div>

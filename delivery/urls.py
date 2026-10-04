@@ -18,12 +18,20 @@ from django.contrib import admin
 from django.conf import settings
 from django.conf.urls.static import static
 from django.urls import include, path
-from delivery_APP.views import home
+
+from delivery_APP import views as delivery_app_views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('auth/', include('auth_system.urls')),
-    path('', home, name='home'),
+    path('', delivery_app_views.home, name='home'),
+    path('restaurant-home/', delivery_app_views.restaurant_home, name='restaurant_home'),
+    path('menu/<int:restaurant_id>/', delivery_app_views.restaurant_menu, name='restaurant_menu'),
+    path('restoransaddlist/', delivery_app_views.restaurant_requests, name='restoransaddlist'),
+    path('restaurant-request/<int:request_id>/approve/', delivery_app_views.approve_restaurant_request, name='approve_restaurant_request'),
+    path('restaurant-request/<int:request_id>/reject/', delivery_app_views.reject_restaurant_request, name='reject_restaurant_request'),
+    path('addrestorantinfo/', delivery_app_views.add_restaurant_info, name='add_restaurant_info'),
+    path('createdish/', delivery_app_views.add_dish, name='create_dish'),
 ]
 
 if settings.DEBUG:

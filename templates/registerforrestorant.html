@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+
+{% block title %}Реєстрація ресторану{% endblock %}
+
+{% block content %}
+<div class="auth-page">
+    <div class="auth-intro">
+        <div class="eyebrow">Партнерство</div>
+        <h1>Створіть<br>кабінет<br>свого ресторану.</h1>
+        <p>Додайте ресторан до платформи і почніть приймати замовлення онлайн.</p>
+        <div class="intro-mark" aria-hidden="true">🥗</div>
+    </div>
+
+    <div class="auth-form-panel restaurant-panel">
+        <h2>Реєстрація ресторану</h2>
+        <p class="auth-subtitle">Заповніть дані про заклад, щоб активувати профіль.</p>
+
+        <form method="post" novalidate>
+            {% csrf_token %}
+            {{ form.non_field_errors }}
+            {% for field in form %}
+                <div>
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.help_text %}
+                        <small class="field-help">{{ field.help_text }}</small>
+                    {% endif %}
+                    {% if field.errors %}
+                        <div class="field-error">{{ field.errors }}</div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+            <button type="submit">Зареєструвати ресторан</button>
+        </form>
+
+        <p class="auth-switch">Вже маєте акаунт? <a href="{% url 'restaurant_login' %}">Увійти</a></p>
+    </div>
+</div>
+<script>
+    document.querySelectorAll('.password-toggle').forEach(function (toggle) {
+        toggle.addEventListener('click', function () {
+            const passwordInput = document.getElementById(toggle.dataset.passwordTarget);
+            const isHidden = passwordInput.type === 'password';
+            passwordInput.type = isHidden ? 'text' : 'password';
+            toggle.textContent = isHidden ? 'Приховати' : 'Показати';
+            toggle.setAttribute('aria-label', isHidden ? 'Приховати пароль' : 'Показати пароль');
+        });
+    });
+</script>
+{% endblock %}

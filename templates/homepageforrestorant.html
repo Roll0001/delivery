@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+
+{% block title %}Кабінет ресторана{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="section-head">
+        <h2>Кабінет ресторана</h2>
+        <span class="eyebrow">Панель управління</span>
+    </div>
+
+    <div style="display:flex; flex-wrap:wrap; gap:16px; margin-bottom:30px;">
+        <a class="hero-btn primary" href="{% url 'add_restaurant_info' %}">Додати інформацію про ресторан</a>
+        <a class="hero-btn secondary" href="{% url 'create_dish' %}">Створити меню</a>
+    </div>
+
+    <div class="restaurant-grid" style="margin-bottom:28px;">
+        {% for restaurant in restaurants %}
+            <article class="restaurant-card">
+                <div class="restaurant-image">
+                    {% if restaurant.photo %}
+                        <img src="{{ restaurant.photo.url }}" alt="{{ restaurant.name }}">
+                    {% else %}
+                        <div class="restaurant-placeholder">🍽️</div>
+                    {% endif %}
+                </div>
+                <div class="restaurant-copy">
+                    <h3>{{ restaurant.name }}</h3>
+                    <p>{{ restaurant.address }}</p>
+                    <p>{{ restaurant.opening_hours }}</p>
+                </div>
+            </article>
+        {% empty %}
+            <p class="empty">Поки що немає ресторанів. Додайте свій ресторан.</p>
+        {% endfor %}
+    </div>
+
+    <div class="section-head">
+        <h2>Меню</h2>
+        <span class="eyebrow">{{ dishes|length }} страв</span>
+    </div>
+
+    <div class="menu-grid">
+        {% for dish in dishes %}
+            <article class="dish-card">
+                {% if dish.photo %}
+                    <img src="{{ dish.photo.url }}" alt="{{ dish.name }}">
+                {% else %}
+                    <div style="height:180px; display:grid; place-items:center; background:#edf2e8; font-size:64px;">🍲</div>
+                {% endif %}
+                <div class="dish-body">
+                    <div class="dish-head">
+                        <h3>{{ dish.name }}</h3>
+                        <span class="price">{{ dish.price }} ₴</span>
+                    </div>
+                    <p><strong>Ресторан:</strong> {{ dish.restaurant.name }}</p>
+                    <p>{{ dish.ingridients }}</p>
+                    <p><strong>Вага:</strong> {{ dish.weight }} г</p>
+                    <p><strong>Час:</strong> {{ dish.time_to_cook }} хв</p>
+                </div>
+            </article>
+        {% empty %}
+            <p class="empty">У меню ще немає страв. Додайте першу страву.</p>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

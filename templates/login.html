@@ -28,6 +28,8 @@
         <button type="submit">Увійти</button>
     </form>
         <p class="auth-switch">Ще не маєте акаунта? <a href="/auth/register/">Зареєструватися</a></p>
+        <div class="auth-divider"><span>або</span></div>
+        <a class="auth-secondary-link" href="{% url 'restaurant_login' %}">Увійти як ресторан</a>
     </div>
 </div>
 {% endblock %}

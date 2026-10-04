@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+
+{% block title %}Логін для ресторанів{% endblock %}
+
+{% block content %}
+<div class="auth-page">
+    <div class="auth-intro">
+        <div class="eyebrow">Для партнерів</div>
+        <h1>Керуйте<br>ресторанами<br>і меню.</h1>
+        <p>Увійдіть у кабінет ресторана, щоб оновлювати страви, години роботи та акції.</p>
+        <div class="intro-mark" aria-hidden="true">🍽️</div>
+    </div>
+
+    <div class="auth-form-panel restaurant-panel">
+        <h2>Вхід для ресторану</h2>
+        <p class="auth-subtitle">Введіть дані облікового запису партнера.</p>
+
+        <form method="post">
+            {% csrf_token %}
+            {{ form.non_field_errors }}
+            {% for field in form %}
+                <div>
+                    <label for="{{ field.id_for_label }}">{% if field.label == 'Username' %}Назва ресторану або контакт{% else %}{{ field.label }}{% endif %}</label>
+                    {{ field }}
+                    {% if field.errors %}
+                        <div class="field-error">{{ field.errors }}</div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+            <button type="submit">Увійти в ресторан</button>
+        </form>
+
+        <p class="auth-switch">Немає акаунта? <a href="{% url 'restaurant_register' %}">Зареєструвати ресторан</a></p>
+        <div class="auth-divider"><span>або</span></div>
+        <a class="auth-secondary-link" href="{% url 'login' %}">Вхід для клієнтів</a>
+    </div>
+</div>
+{% endblock %}
