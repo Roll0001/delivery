@@ -9,6 +9,20 @@ class RestaurantApplication(models.Model):
         ('approved', 'Схвалено'),
         ('rejected', 'Відхилено'),
     ]
+    BUSINESS_TYPE_CHOICES = [
+        ('perkarna', 'Перкарня'),
+        ('beauty', 'Товари для краси'),
+        ('electronics', 'Електроніка'),
+        ('fashion', 'Мода'),
+        ('flowers', 'Квіти та рослини'),
+        ('delicacies', 'Делікатеси'),
+        ('home', 'Товари для дому'),
+        ('ice_cream', 'Морозиво'),
+        ('jewelry', 'Ювелірні вироби'),
+        ('optics', 'Оптика'),
+        ('pharmacy', 'Аптека'),
+    ]
+
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -19,6 +33,11 @@ class RestaurantApplication(models.Model):
     )
     name = models.CharField(max_length=200, verbose_name='Назва ресторану')
     contact_name = models.CharField(max_length=150, verbose_name='Контактна особа')
+    contact_first_name = models.CharField(max_length=100, blank=True, default='', verbose_name="Ім'я контактної особи")
+    contact_last_name = models.CharField(max_length=100, blank=True, default='', verbose_name='Прізвище контактної особи')
+    business_type = models.CharField(max_length=50, choices=BUSINESS_TYPE_CHOICES, blank=True, default='', verbose_name='Тип магазину/ресторана')
+    corporate_email = models.EmailField(blank=True, default='', verbose_name='Корпоративна email адреса')
+    contact_phone = models.CharField(max_length=25, blank=True, default='', verbose_name='Номер контактної особи')
     phone_number = models.CharField(max_length=25, verbose_name='Телефон')
     email = models.EmailField(blank=True, default='', verbose_name='Email')
     address = models.TextField(verbose_name='Адреса')
