@@ -8,9 +8,9 @@
         <div>
             <div class="eyebrow">Ресторан</div>
             <h1>{{ restaurant.name }}</h1>
-            <p>{{ restaurant.address }}</p>
+            <p>{% if restaurant.city %}{{ restaurant.city }} · {% endif %}{{ restaurant.address }}</p>
             <div class="menu-meta">
-                <span class="meta-pill">📍 {{ restaurant.address }}</span>
+                <span class="meta-pill">📍 {% if restaurant.city %}{{ restaurant.city }} · {% endif %}{{ restaurant.address }}</span>
                 <span class="meta-pill">🕒 {{ restaurant.opening_hours }}</span>
                 <span class="meta-pill">📞 {{ restaurant.phone_number }}</span>
             </div>
@@ -45,10 +45,30 @@
                     <p>{{ dish.ingridients }}</p>
                     <p><strong>Вага:</strong> {{ dish.weight }} г</p>
                     <p><strong>Готується:</strong> {{ dish.time_to_cook }} хв</p>
+                    <a class="hero-btn primary" href="{% url 'place_order' dish.id %}">Замовити</a>
                 </div>
             </article>
         {% empty %}
-            <p class="empty">У цього ресторану поки немає страв у меню.</p>
+            {% if not catalog_dishes %}<p class="empty">У цього ресторану поки немає страв у меню.</p>{% endif %}
+        {% endfor %}
+        {% for dish in catalog_dishes %}
+            <article class="dish-card">
+                {% if dish.photo %}
+                    <img src="{{ dish.photo.url }}" alt="{{ dish.name }}">
+                {% else %}
+                    <div style="height:180px; display:grid; place-items:center; background:#edf2e8; font-size:64px;">🍲</div>
+                {% endif %}
+                <div class="dish-body">
+                    <div class="dish-head">
+                        <h3>{{ dish.name }}</h3>
+                        <span class="price">{{ dish.price }} ₴</span>
+                    </div>
+                    <p><strong>Категорія:</strong> {{ dish.get_dish_type_display }}</p>
+                    <p>{{ dish.ingridients }}</p>
+                    <p><strong>Вага:</strong> {{ dish.weight }}</p>
+                    <p><strong>Готується:</strong> {{ dish.time_to_cook }} хв</p>
+                </div>
+            </article>
         {% endfor %}
     </div>
 </section>

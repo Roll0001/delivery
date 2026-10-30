@@ -5,6 +5,8 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 
+from delivery_APP.models import CITY_CHOICES
+
 
 _UKRAINIAN_TRANSLITERATION = {
     'а': 'a', 'б': 'b', 'в': 'v', 'г': 'h', 'ґ': 'g', 'д': 'd', 'е': 'e', 'є': 'ie', 'ж': 'zh',
@@ -40,6 +42,10 @@ def build_username_from_name(first_name, last_name):
 class CustomUserCreationForm(UserCreationForm):
     first_name = forms.CharField(required=True, label="Ім'я")
     last_name = forms.CharField(required=True, label="Прізвище")
+    city = forms.ChoiceField(
+        choices=[('', 'Оберіть місто'), *CITY_CHOICES],
+        label='Місто',
+    )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+
+{% block title %}Замовлення ресторану{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="section-head">
+        <h2>Замовлення</h2>
+        <a class="hero-btn secondary" style="margin:0;" href="{% url 'restaurant_home' %}">До кабінету</a>
+    </div>
+
+    <div style="display:grid; gap:18px;">
+        {% for order in orders %}
+            <article style="background:var(--cream); border:1px solid var(--line); padding:22px;">
+                <div style="display:flex; flex-wrap:wrap; justify-content:space-between; gap:12px; border-bottom:1px solid var(--line); padding-bottom:14px; margin-bottom:14px;">
+                    <h3 style="margin:0;">Замовлення №{{ order.pk }}</h3>
+                    <span class="meta-pill">{{ order.get_status_display }}</span>
+                </div>
+                <p><strong>Страва:</strong> {{ order.cart.name }}</p>
+                <p><strong>Кількість:</strong> {{ order.quantity }}</p>
+                <p><strong>Сума:</strong> {{ order.total|floatformat:2 }} ₴</p>
+                <p><strong>Замовник:</strong> {{ order.name }}</p>
+                <p><strong>Адреса доставки:</strong> {{ order.address }}</p>
+                <p><strong>Телефон:</strong> <a href="tel:{{ order.phone_number }}">{{ order.phone_number }}</a></p>
+                <p><strong>Оплата:</strong> {{ order.get_payment_method_display }}</p>
+                <p><strong>Час:</strong> {{ order.order_time|date:"d.m.Y H:i" }}</p>
+            </article>
+        {% empty %}
+            <p class="empty">Замовлень поки немає.</p>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

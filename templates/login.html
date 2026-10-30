@@ -15,6 +15,7 @@
         <p class="auth-subtitle">Введіть свої дані для продовження.</p>
     <form method="post">
         {% csrf_token %}
+        <input type="hidden" name="next" value="{{ next }}">
         {{ form.non_field_errors }}
         {% for field in form %}
             <div>
@@ -29,7 +30,6 @@
     </form>
         <p class="auth-switch">Ще не маєте акаунта? <a href="/auth/register/">Зареєструватися</a></p>
         <div class="auth-divider"><span>або</span></div>
-        <a class="auth-secondary-link" href="{% url 'restaurant_login' %}">Увійти як ресторан</a>
     </div>
 </div>
 {% endblock %}

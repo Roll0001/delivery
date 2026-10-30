@@ -1,6 +1,8 @@
 from django.contrib.auth import get_user_model
 from django.db import models
 
+from delivery_APP.models import CITY_CHOICES
+
 
 class RestaurantProfile(models.Model):
     user = models.OneToOneField(get_user_model(), on_delete=models.CASCADE, related_name='restaurant_profile')
@@ -9,6 +11,18 @@ class RestaurantProfile(models.Model):
 
     def __str__(self):
         return f"Ресторан: {self.user.username}"
+
+
+class CustomerProfile(models.Model):
+    user = models.OneToOneField(
+        get_user_model(),
+        on_delete=models.CASCADE,
+        related_name='customer_profile',
+    )
+    city = models.CharField(max_length=100, choices=CITY_CHOICES)
+
+    def __str__(self):
+        return f"Покупець: {self.user.username}"
 
 
 class User(models.Model):

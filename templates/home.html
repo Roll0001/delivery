@@ -12,16 +12,96 @@
 			<input type="search" name="q" value="{{ query }}" placeholder="Пошук ресторану або адреси" aria-label="Пошук ресторану">
 			<button class="button" type="submit">Знайти</button>
 		</form>
+		{% if user.is_staff %}
+			<a class="button" href="{% url 'restoransaddlist' %}">Заявки ресторанів</a>
+		{% endif %}
 	</div>
 	<div class="hero-art" aria-hidden="true"></div>
 </section>
+
+<section class="section" aria-label="Категорії каталогу">
+	<div class="category-columns">
+		<div class="category-panel">
+			<h2>Страви</h2>
+			<div class="category-buttons">
+				{% for value, label in dish_type_choices %}
+					<a class="category-button{% if category_kind == 'dish' and category == value %} active{% endif %}"
+						href="?kind=dish&amp;category={{ value|urlencode }}{% if query %}&amp;q={{ query|urlencode }}{% endif %}"
+						{% if category_kind == 'dish' and category == value %}aria-current="true"{% endif %}>{{ label }}</a>
+				{% endfor %}
+			</div>
+		</div>
+		<div class="category-panel">
+			<h2>Продукти</h2>
+			<div class="category-buttons">
+				{% for value, label in product_type_choices %}
+					<a class="category-button{% if category_kind == 'product' and category == value %} active{% endif %}"
+						href="?kind=product&amp;category={{ value|urlencode }}{% if query %}&amp;q={{ query|urlencode }}{% endif %}"
+						{% if category_kind == 'product' and category == value %}aria-current="true"{% endif %}>{{ label }}</a>
+				{% endfor %}
+			</div>
+		</div>
+	</div>
+</section>
+
+{% if selected_category_label %}
+<section class="section" id="category-results">
+	<div class="section-head">
+		<h2>{{ selected_category_label }}</h2>
+		<a class="hero-btn secondary" style="margin:0;" href="{% url 'home' %}{% if query %}?q={{ query|urlencode }}{% endif %}">Усі заклади</a>
+	</div>
+	{% if category_kind == 'dish' %}
+		<div class="menu-grid">
+			{% for dish in catalog_dishes %}
+				<article class="dish-card">
+					{% if dish.photo %}
+						<img src="{{ dish.photo.url }}" alt="{{ dish.name }}">
+					{% else %}
+						<div style="height:180px; display:grid; place-items:center; background:#edf2e8; font-size:64px;">🍲</div>
+					{% endif %}
+					<div class="dish-body">
+						<div class="dish-head"><h3>{{ dish.name }}</h3><span class="price">{{ dish.price }} ₴</span></div>
+						<p><strong>Заклад:</strong> {{ dish.restaurant.name }}</p>
+						<p>{{ dish.ingridients }}</p>
+						<p><strong>Вага:</strong> {{ dish.weight }}</p>
+						<p><strong>Час:</strong> {{ dish.time_to_cook }} хв</p>
+						<a class="hero-btn primary" href="{% url 'restaurant_menu' dish.restaurant_id %}">Переглянути меню</a>
+					</div>
+				</article>
+			{% empty %}
+				<p class="empty">У цій категорії поки немає страв{% if customer_city %} у місті {{ customer_city }}{% endif %}.</p>
+			{% endfor %}
+		</div>
+	{% else %}
+		<div class="menu-grid">
+			{% for product in products %}
+				<article class="dish-card">
+					{% if product.photo %}
+						<img src="{{ product.photo.url }}" alt="{{ product.name }}">
+					{% else %}
+						<div style="height:180px; display:grid; place-items:center; background:#edf2e8; font-size:64px;">🛍️</div>
+					{% endif %}
+					<div class="dish-body">
+						<div class="dish-head"><h3>{{ product.name }}</h3><span class="price">{{ product.price }} ₴</span></div>
+						<p><strong>Магазин:</strong> {{ product.restaurant.name }}</p>
+						<p><strong>Вага або об’єм:</strong> {{ product.weight }}</p>
+					</div>
+				</article>
+			{% empty %}
+				<p class="empty">У цій категорії поки немає товарів{% if customer_city %} у місті {{ customer_city }}{% endif %}.</p>
+			{% endfor %}
+		</div>
+	{% endif %}
+</section>
+{% endif %}
+
 <section class="section" id="restaurants">
-	<div class="section-head"><h2>Ресторани поруч</h2><span class="eyebrow">{{ restaurants|length }} місць</span></div>
+	<div class="section-head"><h2>{% if customer_city %}Ресторани у місті {{ customer_city }}{% else %}Ресторани поруч{% endif %}</h2><span class="eyebrow">{{ restaurants|length }} місць</span></div>
 	<div class="restaurant-grid">
 		{% for restaurant in restaurants %}
 			<article class="restaurant-card">
 				<div class="restaurant-image">{% if restaurant.photo %}<img src="{{ restaurant.photo.url }}" alt="{{ restaurant.name }}">{% else %}<div class="restaurant-placeholder">🍽️</div>{% endif %}</div>
-				<div class="restaurant-copy"><h3>{{ restaurant.name }}</h3><p>{{ restaurant.address }} · {{ restaurant.opening_hours }}</p></div>
+				<div class="restaurant-copy"><h3>{{ restaurant.name }}</h3><p>{% if restaurant.city %}{{ restaurant.city }} · {% endif %}{{ restaurant.address }} · {{ restaurant.opening_hours }}</p></div>
                 <a class="hero-btn primary" href="{% url 'restaurant_menu' restaurant.id %}">Переглянути меню</a>
             </article>
 		{% empty %}<p class="empty">Поки що ресторанів немає. Спробуйте інший пошук або додайте перший ресторан через адмінпанель.</p>{% endfor %}

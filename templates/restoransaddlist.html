@@ -17,14 +17,21 @@
                         <p><strong>Контакт:</strong> {{ app.contact_name }}</p>
                         <p><strong>Телефон:</strong> {{ app.phone_number }}</p>
                         <p><strong>Email:</strong> {{ app.email|default:'—' }}</p>
-                        <p><strong>Адреса:</strong> {{ app.address }}</p>
+                        <p><strong>Місто:</strong> {{ app.get_city_display|default:'—' }}</p>
+                        {% if app.address %}<p><strong>Адреса:</strong> {{ app.address }}</p>{% endif %}
                         <p><strong>Години:</strong> {{ app.opening_hours }}</p>
                         <p><strong>Статус:</strong> {{ app.get_status_display }}</p>
                     </div>
                     {% if app.status == 'pending' %}
                         <div style="display:flex; gap:12px; margin-top:16px;">
-                            <a class="hero-btn primary" href="{% url 'approve_restaurant_request' app.id %}">Схвалити</a>
-                            <a class="hero-btn secondary" href="{% url 'reject_restaurant_request' app.id %}">Відхилити</a>
+                            <form method="post" action="{% url 'approve_restaurant_request' app.id %}">
+                                {% csrf_token %}
+                                <button class="hero-btn primary" style="border:0; cursor:pointer;" type="submit">Схвалити</button>
+                            </form>
+                            <form method="post" action="{% url 'reject_restaurant_request' app.id %}">
+                                {% csrf_token %}
+                                <button class="hero-btn secondary" style="border:0; cursor:pointer;" type="submit">Відхилити</button>
+                            </form>
                         </div>
                     {% endif %}
                 </article>

@@ -121,6 +121,9 @@ MEDIA_URL = 'media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 LOGIN_URL = 'login'
+AUTHENTICATION_BACKENDS = [
+    'auth_system.backends.EmailBackend',
+]
 
 
 # Email

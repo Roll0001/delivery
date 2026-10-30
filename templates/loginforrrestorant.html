@@ -13,14 +13,14 @@
 
     <div class="auth-form-panel restaurant-panel">
         <h2>Вхід для ресторану</h2>
-        <p class="auth-subtitle">Введіть дані облікового запису партнера.</p>
+        <p class="auth-subtitle">Увійдіть за корпоративною електронною адресою та паролем.</p>
 
         <form method="post">
             {% csrf_token %}
             {{ form.non_field_errors }}
             {% for field in form %}
                 <div>
-                    <label for="{{ field.id_for_label }}">{% if field.label == 'Username' %}Назва ресторану або контакт{% else %}{{ field.label }}{% endif %}</label>
+                    <label for="{{ field.id_for_label }}">{% if field.name == 'username' %}Корпоративна email адреса{% else %}{{ field.label }}{% endif %}</label>
                     {{ field }}
                     {% if field.errors %}
                         <div class="field-error">{{ field.errors }}</div>

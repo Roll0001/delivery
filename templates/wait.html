@@ -1,0 +1,220 @@
+{% extends 'base.html' %}
+
+{% block title %}Статус заявки{% endblock %}
+
+{% block content %}
+<style>
+    .application-status-page {
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 48px 24px 72px;
+    }
+    .application-status-card {
+        background: var(--cream);
+        border: 1px solid var(--line);
+        padding: clamp(24px, 5vw, 48px);
+        text-align: center;
+    }
+    .application-status-icon {
+        width: 76px;
+        height: 76px;
+        margin: 0 auto 24px;
+        display: grid;
+        place-items: center;
+        border-radius: 50%;
+        background: #edf2e8;
+        color: var(--green);
+        font-size: 32px;
+    }
+    .application-status-card h1 {
+        font-size: clamp(30px, 5vw, 42px);
+    }
+    .application-status-description {
+        color: var(--muted);
+        line-height: 1.7;
+        max-width: 520px;
+        margin: 0 auto 24px;
+    }
+    .application-status-details {
+        max-width: 480px;
+        margin: 0 auto 24px;
+        padding: 16px 20px;
+        background: #f5f6f0;
+        border: 1px solid var(--line);
+        text-align: left;
+    }
+    .application-status-details p {
+        margin: 7px 0;
+    }
+    .application-progress {
+        height: 8px;
+        margin: 22px 0 10px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: #e4e5dc;
+    }
+    .application-progress span {
+        display: block;
+        width: 35%;
+        height: 100%;
+        border-radius: inherit;
+        background: var(--green);
+        animation: application-progress 1.8s ease-in-out infinite;
+    }
+    @keyframes application-progress {
+        from { transform: translateX(-110%); }
+        to { transform: translateX(310%); }
+    }
+    .application-status-actions {
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 24px;
+    }
+    .application-status-actions .hero-btn {
+        margin: 0;
+    }
+    .application-status-message {
+        min-height: 22px;
+        margin-top: 16px;
+        color: var(--muted);
+        font-size: 13px;
+    }
+    @media (prefers-reduced-motion: reduce) {
+        .application-progress span {
+            animation: none;
+            width: 100%;
+        }
+    }
+</style>
+
+<section class="application-status-page">
+    <div
+        class="application-status-card"
+        id="application-status"
+        data-status-url="{% url 'restaurant_application_status' application.pk %}"
+        data-status="{{ application.status }}"
+    >
+        <div class="application-status-icon" id="status-icon" aria-hidden="true">⌛</div>
+        <div class="eyebrow">Заявка на реєстрацію</div>
+        <h1 id="status-heading">Заявку прийнято</h1>
+        <p class="application-status-description" id="status-description">
+            Ми перевіримо дані закладу. Статус оновлюватиметься автоматично — залиште цю сторінку відкритою або поверніться пізніше.
+        </p>
+
+        <div class="application-status-details">
+            <p><strong>Номер заявки:</strong> #{{ application.pk }}</p>
+            <p><strong>Заклад:</strong> {{ application.name }}</p>
+            <p><strong>Місто:</strong> {{ application.get_city_display }}</p>
+            <p><strong>Поточний статус:</strong> <span id="status-label">{{ application.get_status_display }}</span></p>
+        </div>
+
+        <div class="application-progress" id="progress-indicator" role="progressbar" aria-label="Заявка на розгляді">
+            <span></span>
+        </div>
+        <p class="application-status-message" id="status-message" role="status" aria-live="polite">
+            Перевіряємо актуальний статус…
+        </p>
+
+        <div class="application-status-actions">
+            <button class="hero-btn primary" id="refresh-btn" type="button">Перевірити статус</button>
+            <a class="hero-btn secondary" id="dashboard-link" href="{% url 'restaurant_home' %}" hidden>Перейти до кабінету</a>
+            <a class="hero-btn secondary" id="home-link" href="{% url 'home' %}">На головну</a>
+        </div>
+    </div>
+</section>
+
+<script>
+    (function () {
+        const card = document.getElementById('application-status');
+        const statusLabel = document.getElementById('status-label');
+        const statusHeading = document.getElementById('status-heading');
+        const statusDescription = document.getElementById('status-description');
+        const statusMessage = document.getElementById('status-message');
+        const statusIcon = document.getElementById('status-icon');
+        const progressIndicator = document.getElementById('progress-indicator');
+        const refreshButton = document.getElementById('refresh-btn');
+        const dashboardLink = document.getElementById('dashboard-link');
+        const homeLink = document.getElementById('home-link');
+        let isChecking = false;
+        let pollingTimer;
+
+        function showStatus(data) {
+            card.dataset.status = data.status;
+            statusLabel.textContent = data.status_display;
+
+            if (data.status === 'approved') {
+                window.clearInterval(pollingTimer);
+                statusIcon.textContent = '✓';
+                statusHeading.textContent = 'Заявку схвалено!';
+                statusDescription.textContent = 'Ваш заклад зареєстровано. Тепер можна перейти до кабінету та налаштувати меню.';
+                statusMessage.textContent = 'Вітаємо на платформі!';
+                progressIndicator.hidden = true;
+                refreshButton.hidden = true;
+                homeLink.hidden = true;
+                dashboardLink.hidden = false;
+            } else if (data.status === 'rejected') {
+                window.clearInterval(pollingTimer);
+                statusIcon.textContent = '!';
+                statusHeading.textContent = 'Заявку не схвалено';
+                statusDescription.textContent = 'На жаль, заявку відхилено. Якщо потрібні подробиці, зверніться до адміністратора платформи.';
+                statusMessage.textContent = 'Перевірку завершено.';
+                progressIndicator.hidden = true;
+                refreshButton.hidden = true;
+                dashboardLink.hidden = true;
+                homeLink.hidden = false;
+            } else {
+                statusHeading.textContent = 'Заявку прийнято';
+                statusDescription.textContent = 'Ми перевіримо дані закладу. Статус оновлюватиметься автоматично — залиште цю сторінку відкритою або поверніться пізніше.';
+                statusMessage.textContent = 'Заявка очікує на перевірку.';
+                progressIndicator.hidden = false;
+                refreshButton.hidden = false;
+                dashboardLink.hidden = true;
+                homeLink.hidden = false;
+            }
+        }
+
+        async function checkStatus() {
+            if (isChecking || card.dataset.status !== 'pending') {
+                return;
+            }
+
+            isChecking = true;
+            refreshButton.disabled = true;
+            statusMessage.textContent = 'Перевіряємо актуальний статус…';
+
+            try {
+                const response = await fetch(card.dataset.statusUrl, {
+                    headers: { 'Accept': 'application/json' },
+                    credentials: 'same-origin',
+                });
+                if (!response.ok || !response.headers.get('content-type')?.includes('application/json')) {
+                    throw new Error('Не вдалося отримати статус заявки.');
+                }
+
+                const data = await response.json();
+                if (!['pending', 'approved', 'rejected'].includes(data.status) || typeof data.status_display !== 'string') {
+                    throw new Error('Сервер повернув некоректний статус заявки.');
+                }
+                showStatus(data);
+            } catch (error) {
+                statusMessage.textContent = 'Не вдалося оновити статус. Перевірте з’єднання або спробуйте ще раз.';
+            } finally {
+                isChecking = false;
+                refreshButton.disabled = false;
+            }
+        }
+
+        refreshButton.addEventListener('click', checkStatus);
+        showStatus({
+            status: card.dataset.status,
+            status_display: statusLabel.textContent,
+        });
+        if (card.dataset.status === 'pending') {
+            checkStatus();
+            pollingTimer = window.setInterval(checkStatus, 5000);
+        }
+    }());
+</script>
+{% endblock %}

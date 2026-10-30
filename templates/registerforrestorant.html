@@ -30,27 +30,6 @@
     .restaurant-register-shell .auth-form-panel button[type="submit"]:hover {
         background: linear-gradient(135deg, #d96b42 0%, #b85331 100%);
     }
-    .restaurant-register-shell .password-field {
-        display: flex;
-        align-items: stretch;
-        gap: 8px;
-    }
-    .restaurant-register-shell .password-field input {
-        flex: 1;
-        min-width: 0;
-    }
-    .restaurant-register-shell .password-field .password-toggle {
-        width: auto;
-        min-height: 46px;
-        margin-top: 0;
-        padding: 10px 14px;
-        background: #fdf1eb;
-        color: #3f2c25;
-        border: 1px solid #f3d6c8;
-        border-radius: 8px;
-        white-space: nowrap;
-        cursor: pointer;
-    }
 </style>
 <div class="auth-page restaurant-register-shell">
     <div class="auth-intro">
@@ -70,14 +49,7 @@
             {% for field in form %}
                 <div>
                     <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-                    {% if field.name == 'password' or field.name == 'confirm_password' %}
-                        <div class="password-field">
-                            {{ field }}
-                            <button type="button" class="password-toggle" data-password-target="{{ field.id_for_label }}" aria-label="Показати пароль">Показати</button>
-                        </div>
-                    {% else %}
-                        {{ field }}
-                    {% endif %}
+                    {{ field }}
                     {% if field.help_text %}
                         <small class="field-help">{{ field.help_text }}</small>
                     {% endif %}
@@ -92,15 +64,4 @@
         <p class="auth-switch">Вже маєте акаунт? <a href="{% url 'restaurant_login' %}">Увійти</a></p>
     </div>
 </div>
-<script>
-    document.querySelectorAll('.password-toggle').forEach(function (toggle) {
-        toggle.addEventListener('click', function () {
-            const passwordInput = document.getElementById(toggle.dataset.passwordTarget);
-            const isHidden = passwordInput.type === 'password';
-            passwordInput.type = isHidden ? 'text' : 'password';
-            toggle.textContent = isHidden ? 'Приховати' : 'Показати';
-            toggle.setAttribute('aria-label', isHidden ? 'Приховати пароль' : 'Показати пароль');
-        });
-    });
-</script>
 {% endblock %}

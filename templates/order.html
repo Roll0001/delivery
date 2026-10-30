@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if order %}Замовлення прийнято{% else %}Оформлення замовлення{% endif %}{% endblock %}
+
+{% block content %}
+<section class="menu-page">
+    {% if order %}
+        <div class="auth-form-panel" style="max-width:720px; margin:30px auto;">
+            <div class="eyebrow">Замовлення №{{ order.id }}</div>
+            <h1>Дякуємо за замовлення!</h1>
+            <p class="auth-subtitle">Заклад зв'яжеться з вами для підтвердження доставки.</p>
+            <div class="restaurant-copy">
+                <h3>{{ dish.name }}</h3>
+                <p><strong>Заклад:</strong> {{ dish.restaurant.name }}</p>
+                <p><strong>Кількість:</strong> {{ order.quantity }}</p>
+                <p><strong>Разом:</strong> {{ total }} ₴</p>
+                <p><strong>Отримувач:</strong> {{ order.name }}</p>
+                <p><strong>Адреса:</strong> {{ order.address }}</p>
+                <p><strong>Телефон:</strong> {{ order.phone_number }}</p>
+                <p><strong>Оплата:</strong> {{ order.get_payment_method_display }}</p>
+            </div>
+            <a class="button" href="{% url 'restaurant_menu' dish.restaurant_id %}">Повернутися до меню</a>
+        </div>
+    {% else %}
+        <div class="menu-hero">
+            <div>
+                <div class="eyebrow">Оформлення замовлення</div>
+                <h1>{{ dish.name }}</h1>
+                <p>{{ dish.restaurant.name }}</p>
+                <div class="menu-meta">
+                    <span class="meta-pill">{{ dish.price }} ₴ за одиницю</span>
+                    <span class="meta-pill">{{ dish.restaurant.address }}</span>
+                </div>
+            </div>
+            <div>
+                {% if dish.photo %}
+                    <img src="{{ dish.photo.url }}" alt="{{ dish.name }}">
+                {% else %}
+                    <div class="restaurant-placeholder" style="height:290px; border-radius:18px; background:#dfe8d6; display:grid; place-items:center; font-size:76px;">🍽️</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="auth-form-panel" style="max-width:720px; margin:30px auto;">
+            <h2>Дані доставки</h2>
+            <p class="auth-subtitle">Заповніть контактні дані, щоб заклад міг доставити замовлення.</p>
+            <form method="post">
+                {% csrf_token %}
+                {% for field in form %}
+                    <div>
+                        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.errors %}
+                            <div class="field-error">{{ field.errors }}</div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+                <button class="button" type="submit">Підтвердити замовлення</button>
+            </form>
+            <p class="auth-subtitle" style="margin-top:20px; margin-bottom:0;">Підсумкову вартість буде розраховано за кількістю: {{ dish.price }} ₴ за одиницю.</p>
+        </div>
+    {% endif %}
+</section>
+{% endblock %}
