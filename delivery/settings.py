@@ -86,6 +86,8 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'delivery.wsgi.application'
 
+STATIC_URL = "/static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # Database
 # https://docs.djangoproject.com/en/6.1/ref/settings/#databases
