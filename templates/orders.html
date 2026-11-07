@@ -5,28 +5,31 @@
 {% block content %}
 <section class="section">
     <div class="section-head">
-        <h2>Замовлення</h2>
+        <div><span class="eyebrow">Панель закладу</span><h2>Замовлення</h2></div>
         <a class="hero-btn secondary" style="margin:0;" href="{% url 'restaurant_home' %}">До кабінету</a>
     </div>
 
-    <div style="display:grid; gap:18px;">
+    <div class="order-list">
         {% for order in orders %}
-            <article style="background:var(--cream); border:1px solid var(--line); padding:22px;">
-                <div style="display:flex; flex-wrap:wrap; justify-content:space-between; gap:12px; border-bottom:1px solid var(--line); padding-bottom:14px; margin-bottom:14px;">
-                    <h3 style="margin:0;">Замовлення №{{ order.pk }}</h3>
-                    <span class="meta-pill">{{ order.get_status_display }}</span>
+            <article class="order-card">
+                <div class="order-card-heading">
+                    <div><span class="eyebrow">Нове замовлення</span><h3>№{{ order.pk }} · {{ order.cart.name }}</h3></div>
+                    <span class="order-status order-status-{{ order.status }}">{{ order.get_status_display }}</span>
                 </div>
-                <p><strong>Страва:</strong> {{ order.cart.name }}</p>
-                <p><strong>Кількість:</strong> {{ order.quantity }}</p>
-                <p><strong>Сума:</strong> {{ order.total|floatformat:2 }} ₴</p>
-                <p><strong>Замовник:</strong> {{ order.name }}</p>
-                <p><strong>Адреса доставки:</strong> {{ order.address }}</p>
-                <p><strong>Телефон:</strong> <a href="tel:{{ order.phone_number }}">{{ order.phone_number }}</a></p>
-                <p><strong>Оплата:</strong> {{ order.get_payment_method_display }}</p>
-                <p><strong>Час:</strong> {{ order.order_time|date:"d.m.Y H:i" }}</p>
+                <div class="order-card-grid">
+                    <p><span>Кількість</span><strong>{{ order.quantity }} шт.</strong></p>
+                    <p><span>Сума</span><strong>{{ order.total|floatformat:2 }} ₴</strong></p>
+                    <p><span>Замовник</span><strong>{{ order.name }}</strong></p>
+                    <p><span>Телефон</span><strong><a href="tel:{{ order.phone_number }}">{{ order.phone_number }}</a></strong></p>
+                    {% if order.city %}<p><span>Місто доставки</span><strong>{{ order.get_city_display }}</strong></p>{% endif %}
+                    <p><span>Адреса</span><strong>{{ order.address }}</strong></p>
+                    <p><span>Оплата</span><strong>{{ order.get_payment_method_display }}</strong></p>
+                    {% if order.courier %}<p><span>Кур'єр</span><strong>{{ order.courier.get_full_name|default:order.courier.username }}</strong></p>{% endif %}
+                    <p><span>Час</span><strong>{{ order.order_time|date:"d.m.Y H:i" }}</strong></p>
+                </div>
             </article>
         {% empty %}
-            <p class="empty">Замовлень поки немає.</p>
+            <div class="page-empty"><span aria-hidden="true">🍽️</span><h3>Поки тихо</h3><p>Нові замовлення з’являться тут, щойно клієнти оберуть ваш заклад.</p></div>
         {% endfor %}
     </div>
 </section>

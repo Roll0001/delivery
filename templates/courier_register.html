@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block title %}Реєстрація кур'єра{% endblock %}
+
+{% block content %}
+<div class="auth-page">
+    <div class="auth-intro">
+        <div class="eyebrow">Доставка з турботою</div>
+        <h1>Станьте<br>кур'єром.</h1>
+        <p>Створіть профіль, оберіть своє місто та транспорт для доставки.</p>
+        <div class="intro-mark" aria-hidden="true">🚴</div>
+    </div>
+    <div class="auth-form-panel">
+        <h2>Реєстрація кур'єра</h2>
+        <p class="auth-subtitle">Заповніть дані, щоб створити профіль.</p>
+        <form method="post" novalidate>
+            {% csrf_token %}
+            {{ form.non_field_errors }}
+            {% for field in form %}
+                <div>
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {% if field.name == 'password1' or field.name == 'password2' %}
+                        <div class="password-field">
+                            {{ field }}
+                            <button type="button" class="password-toggle" data-password-target="{{ field.id_for_label }}">Показати</button>
+                        </div>
+                    {% else %}
+                        {{ field }}
+                    {% endif %}
+                    {% if field.errors %}<div class="field-error">{{ field.errors }}</div>{% endif %}
+                </div>
+            {% endfor %}
+            <button type="submit">Зареєструватися</button>
+        </form>
+    </div>
+</div>
+<script>
+    document.querySelectorAll('.password-toggle').forEach(function (toggle) {
+        toggle.addEventListener('click', function () {
+            const input = document.getElementById(toggle.dataset.passwordTarget);
+            const isHidden = input.type === 'password';
+            input.type = isHidden ? 'text' : 'password';
+            toggle.textContent = isHidden ? 'Приховати' : 'Показати';
+        });
+    });
+</script>
+{% endblock %}

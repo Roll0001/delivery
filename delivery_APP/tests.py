@@ -1,8 +1,16 @@
+from io import BytesIO
+import tempfile
+
 from django.contrib.auth import get_user_model
+from django.db import IntegrityError, transaction
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
+from django.test.utils import override_settings
 from django.urls import reverse
 
-from auth_system.models import CustomerProfile, RestaurantProfile
+from PIL import Image
+
+from auth_system.models import CourierProfile, CustomerProfile, RestaurantProfile
 from delivery_APP.models import (
     CartOfMenu,
     Delivery,
@@ -223,6 +231,7 @@ class HomeAdminLinkTests(TestCase):
 
         self.assertContains(response, reverse('restaurant_register'))
         self.assertContains(response, 'Додати ресторан')
+        self.assertContains(response, reverse('customer_orders'))
 
     def test_anonymous_user_does_not_see_restaurant_registration_link(self):
         response = self.client.get(reverse('home'))
@@ -555,6 +564,7 @@ class CustomerOrderTests(TestCase):
     def setUp(self):
         self.restaurant = RestorantInfo.objects.create(
             name='Green Bistro',
+            city='Львів',
             address='Main street',
             phone_number='+380501234567',
             opening_hours='09:00-21:00',
@@ -568,12 +578,61 @@ class CustomerOrderTests(TestCase):
             price=120,
         )
 
+    def test_customer_orders_page_lists_only_the_current_users_orders(self):
+        customer = get_user_model().objects.create_user(
+            username='customer',
+            password='password',
+        )
+        other_customer = get_user_model().objects.create_user(
+            username='other-customer',
+            password='password',
+        )
+        own_order = Delivery.objects.create(
+            user=customer,
+            cart=self.dish,
+            name='Олена',
+            address='Main street 1',
+            phone_number='+380501234567',
+            quantity=2,
+            city='Львів',
+            status='delivered',
+        )
+        Delivery.objects.create(
+            user=other_customer,
+            cart=self.dish,
+            name='Іван',
+            address='Main street 2',
+            phone_number='+380501234568',
+        )
+        self.client.force_login(customer)
+
+        response = self.client.get(reverse('customer_orders'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'my_orders.html')
+        self.assertContains(response, f'Замовлення №{own_order.pk}')
+        self.assertContains(response, '240.00 ₴')
+        self.assertContains(
+            response,
+            reverse('completed_order', args=[own_order.tracking_token]),
+        )
+        self.assertNotContains(response, 'Іван')
+
+    def test_customer_orders_page_requires_login(self):
+        response = self.client.get(reverse('customer_orders'))
+
+        self.assertRedirects(
+            response,
+            f"{reverse('login')}?next={reverse('customer_orders')}",
+        )
+
     def test_customer_can_place_order_as_guest(self):
         response = self.client.post(
             reverse('place_order', args=[self.dish.pk]),
             {
                 'name': 'Олена',
                 'address': 'Київ, вул. Центральна 1',
+                'city': 'Львів',
                 'phone_number': '+380501234567',
                 'quantity': '2',
                 'payment_method': 'tothecourier',
@@ -589,6 +648,11 @@ class CustomerOrderTests(TestCase):
         self.assertEqual(order.cart, self.dish)
         self.assertEqual(order.quantity, 2)
         self.assertEqual(order.payment_method, 'tothecourier')
+        self.assertEqual(order.city, 'Львів')
+        self.assertContains(
+            response,
+            reverse('completed_order', args=[order.tracking_token]),
+        )
 
     def test_logged_in_customer_order_is_linked_to_account(self):
         user = get_user_model().objects.create_user(
@@ -603,6 +667,7 @@ class CustomerOrderTests(TestCase):
             {
                 'name': 'Олена',
                 'address': 'Київ, вул. Центральна 1',
+                'city': 'Львів',
                 'phone_number': '+380501234567',
                 'quantity': '1',
                 'payment_method': 'cart',
@@ -618,6 +683,7 @@ class CustomerOrderTests(TestCase):
             {
                 'name': 'Олена',
                 'address': 'Київ, вул. Центральна 1',
+                'city': 'Львів',
                 'phone_number': '+380501234567',
                 'quantity': '0',
                 'payment_method': 'tothecourier',
@@ -628,9 +694,272 @@ class CustomerOrderTests(TestCase):
         self.assertIn('quantity', response.context['form'].errors)
         self.assertEqual(Delivery.objects.count(), 0)
 
+    def test_delivery_city_is_required(self):
+        response = self.client.post(
+            reverse('place_order', args=[self.dish.pk]),
+            {
+                'name': 'Олена',
+                'address': 'Львів, вул. Центральна 1',
+                'phone_number': '+380501234567',
+                'quantity': '1',
+                'payment_method': 'tothecourier',
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('city', response.context['form'].errors)
+        self.assertEqual(Delivery.objects.count(), 0)
+
+    def test_order_form_defaults_to_customer_delivery_city_when_available(self):
+        user = get_user_model().objects.create_user(
+            username='customer',
+            password='password',
+        )
+        CustomerProfile.objects.create(user=user, city='Львів')
+        self.client.force_login(user)
+
+        response = self.client.get(reverse('place_order', args=[self.dish.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['form']['city'].value(), 'Львів')
+
+    def test_customer_must_choose_delivery_area_when_profile_city_is_too_general(self):
+        user = get_user_model().objects.create_user(
+            username='kyiv-customer',
+            password='password',
+        )
+        CustomerProfile.objects.create(user=user, city='Київ')
+        self.client.force_login(user)
+
+        response = self.client.get(reverse('place_order', args=[self.dish.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIsNone(response.context['form']['city'].value())
+
     def test_order_page_get_does_not_create_order(self):
         response = self.client.get(reverse('place_order', args=[self.dish.pk]))
 
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'order.html')
         self.assertEqual(Delivery.objects.count(), 0)
+
+
+class CourierDeliveryTests(TestCase):
+    def setUp(self):
+        self.courier = get_user_model().objects.create_user(
+            username='courier',
+            password='password',
+        )
+        CourierProfile.objects.create(
+            user=self.courier,
+            city='Львів',
+            transport='bicycle',
+        )
+        self.restaurant = RestorantInfo.objects.create(
+            name='Lviv Bistro',
+            city='Львів',
+            address='Market street',
+            phone_number='+380501234567',
+            opening_hours='09:00-21:00',
+        )
+        self.dish = CartOfMenu.objects.create(
+            restaurant=self.restaurant,
+            name='Soup',
+            ingridients='Vegetables',
+            weight=300,
+            time_to_cook=15,
+            price=120,
+        )
+        self.media_directory = tempfile.TemporaryDirectory()
+        media_override = override_settings(MEDIA_ROOT=self.media_directory.name)
+        media_override.enable()
+        self.addCleanup(media_override.disable)
+        self.addCleanup(self.media_directory.cleanup)
+        self.client.force_login(self.courier)
+
+    def completion_photo(self):
+        image_buffer = BytesIO()
+        Image.new('RGB', (1, 1), color='green').save(image_buffer, format='PNG')
+        return SimpleUploadedFile(
+            'delivery-proof.png',
+            image_buffer.getvalue(),
+            content_type='image/png',
+        )
+
+    def create_order(self, *, city='Львів', status='new', courier=None):
+        return Delivery.objects.create(
+            cart=self.dish,
+            name='Олена',
+            address='Market street 1',
+            phone_number='+380501234567',
+            city=city,
+            status=status,
+            courier=courier,
+        )
+
+    def test_courier_sees_only_unassigned_new_orders_in_their_city(self):
+        matching_order = self.create_order()
+        self.create_order(city='Київ Лівий берег')
+        self.create_order(status='on_way', courier=self.courier)
+
+        response = self.client.get(reverse('courier_home'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            list(response.context['available_orders']),
+            [matching_order],
+        )
+        self.assertContains(response, f'Замовлення №{matching_order.pk}')
+
+    def test_courier_can_accept_a_matching_city_order(self):
+        order = self.create_order()
+
+        response = self.client.post(reverse('accept_delivery', args=[order.pk]))
+
+        self.assertRedirects(response, reverse('courier_home'))
+        order.refresh_from_db()
+        self.assertEqual(order.courier, self.courier)
+        self.assertEqual(order.status, 'on_way')
+
+    def test_courier_cannot_accept_another_order_until_current_delivery_is_done(self):
+        first_order = self.create_order()
+        second_order = self.create_order()
+        self.client.post(reverse('accept_delivery', args=[first_order.pk]))
+
+        response = self.client.post(reverse('accept_delivery', args=[second_order.pk]))
+
+        self.assertRedirects(response, reverse('courier_home'))
+        first_order.refresh_from_db()
+        second_order.refresh_from_db()
+        self.assertEqual(first_order.status, 'on_way')
+        self.assertEqual(second_order.status, 'new')
+        self.assertIsNone(second_order.courier)
+        dashboard = self.client.get(reverse('courier_home'))
+        self.assertContains(dashboard, 'Спершу заверши активну доставку')
+        self.assertNotContains(dashboard, reverse('accept_delivery', args=[second_order.pk]))
+
+    def test_database_prevents_a_courier_from_having_two_active_deliveries(self):
+        self.create_order(status='on_way', courier=self.courier)
+
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                self.create_order(status='on_way', courier=self.courier)
+
+    def test_courier_can_accept_next_order_after_completing_delivery(self):
+        first_order = self.create_order()
+        second_order = self.create_order()
+        self.client.post(reverse('accept_delivery', args=[first_order.pk]))
+
+        response = self.client.post(
+            reverse('complete_delivery', args=[first_order.pk]),
+            {'completion_photo': self.completion_photo()},
+        )
+
+        self.assertRedirects(response, reverse('courier_home'))
+        first_order.refresh_from_db()
+        self.assertEqual(first_order.status, 'delivered')
+        self.client.post(reverse('accept_delivery', args=[second_order.pk]))
+        second_order.refresh_from_db()
+        self.assertEqual(second_order.courier, self.courier)
+        self.assertEqual(second_order.status, 'on_way')
+
+    def test_delivery_cannot_be_completed_without_a_photo(self):
+        order = self.create_order(status='on_way', courier=self.courier)
+
+        response = self.client.post(
+            reverse('complete_delivery', args=[order.pk]),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(
+            'completion_photo',
+            response.context['completion_form'].errors,
+        )
+        order.refresh_from_db()
+        self.assertEqual(order.status, 'on_way')
+        self.assertFalse(order.completion_photo)
+
+    def test_completion_photo_is_saved_and_visible_to_customer(self):
+        order = self.create_order(status='on_way', courier=self.courier)
+        customer_url = reverse(
+            'completed_order',
+            args=[order.tracking_token],
+        )
+
+        pending_response = self.client.get(customer_url)
+        self.assertEqual(pending_response.status_code, 200)
+        self.assertContains(pending_response, 'Замовлення ще доставляється')
+
+        response = self.client.post(
+            reverse('complete_delivery', args=[order.pk]),
+            {'completion_photo': self.completion_photo()},
+        )
+
+        self.assertRedirects(response, reverse('courier_home'))
+        order.refresh_from_db()
+        self.assertEqual(order.status, 'delivered')
+        self.assertTrue(order.completion_photo)
+        customer_response = self.client.get(customer_url)
+        self.assertEqual(customer_response.status_code, 200)
+        self.assertContains(customer_response, 'Замовлення доставлено!')
+        self.assertContains(customer_response, order.completion_photo.url)
+
+    def test_tracking_page_rejects_unknown_token(self):
+        import uuid
+
+        response = self.client.get(
+            reverse('completed_order', args=[uuid.uuid4()]),
+        )
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_courier_cannot_accept_an_order_from_another_city(self):
+        order = self.create_order(city='Київ Правий берег')
+
+        response = self.client.post(reverse('accept_delivery', args=[order.pk]))
+
+        self.assertRedirects(response, reverse('courier_home'))
+        order.refresh_from_db()
+        self.assertIsNone(order.courier)
+        self.assertEqual(order.status, 'new')
+
+    def test_courier_can_only_complete_their_own_active_order(self):
+        order = self.create_order(status='on_way', courier=None)
+
+        response = self.client.post(
+            reverse('complete_delivery', args=[order.pk]),
+        )
+
+        self.assertEqual(response.status_code, 404)
+        order.refresh_from_db()
+        self.assertEqual(order.status, 'on_way')
+
+    def test_accepting_order_requires_post(self):
+        order = self.create_order()
+
+        response = self.client.get(reverse('accept_delivery', args=[order.pk]))
+
+        self.assertEqual(response.status_code, 405)
+        order.refresh_from_db()
+        self.assertEqual(order.status, 'new')
+
+    def test_non_courier_cannot_open_courier_order_list(self):
+        customer = get_user_model().objects.create_user(
+            username='customer',
+            password='password',
+        )
+        self.client.force_login(customer)
+
+        response = self.client.get(reverse('courier_home'))
+
+        self.assertRedirects(response, reverse('home'))
+
+    def test_anonymous_user_is_redirected_to_courier_login(self):
+        self.client.logout()
+
+        response = self.client.get(reverse('courier_home'))
+
+        self.assertRedirects(
+            response,
+            f"{reverse('courier_login')}?next={reverse('courier_home')}",
+        )

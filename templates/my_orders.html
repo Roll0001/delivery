@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+
+{% block title %}Мої замовлення{% endblock %}
+
+{% block content %}
+<section class="section customer-orders-page">
+    <div class="section-head">
+        <div>
+            <span class="eyebrow">Ваші покупки</span>
+            <h2>Мої замовлення</h2>
+        </div>
+        <a class="hero-btn secondary" style="margin:0;" href="{% url 'home' %}#restaurants">Замовити ще →</a>
+    </div>
+
+    {% if orders %}
+        <div class="order-list">
+            {% for order in orders %}
+                <article class="order-card customer-order-card">
+                    <div class="order-card-heading">
+                        <div>
+                            <span class="eyebrow">{{ order.order_time|date:"d.m.Y · H:i" }}</span>
+                            <h3>Замовлення №{{ order.pk }}</h3>
+                        </div>
+                        <span class="order-status order-status-{{ order.status }}">{{ order.get_status_display }}</span>
+                    </div>
+                    <div class="order-card-grid">
+                        {% if order.cart %}
+                            <p><span>Страва</span><strong>{{ order.cart.name }} × {{ order.quantity }}</strong></p>
+                            <p><span>Заклад</span><strong>{{ order.cart.restaurant.name }}</strong></p>
+                        {% endif %}
+                        <p><span>Місто</span><strong>{{ order.get_city_display|default:order.city }}</strong></p>
+                        <p><span>Адреса доставки</span><strong>{{ order.address }}</strong></p>
+                        <p><span>Сума</span><strong>{{ order.total|floatformat:2 }} ₴</strong></p>
+                        {% if order.courier %}
+                            <p><span>Кур'єр</span><strong>{{ order.courier.get_full_name|default:order.courier.username }}</strong></p>
+                        {% endif %}
+                    </div>
+                    <div class="customer-order-actions">
+                        <a class="hero-btn primary" href="{% url 'completed_order' order.tracking_token %}">Стежити за замовленням</a>
+                        {% if order.status == 'delivered' and order.completion_photo %}
+                            <a class="hero-btn secondary" href="{{ order.completion_photo.url }}">Фото доставки</a>
+                        {% endif %}
+                    </div>
+                </article>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="page-empty">
+            <span aria-hidden="true">🛍️</span>
+            <h3>Тут з’являться ваші замовлення</h3>
+            <p>Замовлення, оформлені після входу в акаунт, будуть зібрані на цій сторінці.</p>
+            <a class="hero-btn primary" href="{% url 'home' %}#restaurants">Знайти заклад</a>
+        </div>
+    {% endif %}
+</section>
+<style>
+    .customer-orders-page { max-width: 980px; min-height: 55vh; }
+    .customer-order-actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:20px; }
+    .customer-order-actions .hero-btn, .page-empty .hero-btn { margin:0; }
+    @media (max-width:520px) {
+        .customer-order-actions { flex-direction:column; }
+        .customer-order-actions .hero-btn { width:100%; }
+    }
+</style>
+{% endblock %}

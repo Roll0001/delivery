@@ -1,3 +1,5 @@
+import uuid
+
 from django.db import models
 from django.conf import settings
 from django.utils import timezone
@@ -31,6 +33,52 @@ CITY_CHOICES = [
     ('Біла Церква', 'Біла Церква'),
     ("Кам'янець-Подільський", "Кам'янець-Подільський"),
     ('Золочів', 'Золочів'),
+]
+
+COURIER_CITY_CHOICES = [
+    ('Біла Церква', 'Біла Церква'),
+    ('Бориспіль', 'Бориспіль'),
+    ('Боярка', 'Боярка'),
+    ('Бровари', 'Бровари'),
+    ('Буковель', 'Буковель'),
+    ('Черкаси', 'Черкаси'),
+    ('Чернігів', 'Чернігів'),
+    ('Чернівці', 'Чернівці'),
+    ('Чорноморськ', 'Чорноморськ'),
+    ('Дніпро', 'Дніпро'),
+    ('Дрогобич', 'Дрогобич'),
+    ('Ірпінь - Буча', 'Ірпінь - Буча'),
+    ('Івано-Франківськ', 'Івано-Франківськ'),
+    ('Камʼянець-Подільський', 'Камʼянець-Подільський'),
+    ("Кам'янське", "Кам'янське"),
+    ('Харків', 'Харків'),
+    ('Хмельницький', 'Хмельницький'),
+    ('Коломия', 'Коломия'),
+    ('Ковель', 'Ковель'),
+    ('Кременчук', 'Кременчук'),
+    ('Кропивницький', 'Кропивницький'),
+    ('Кривий Ріг', 'Кривий Ріг'),
+    ('Київ Лівий берег', 'Київ Лівий берег'),
+    ('Київ Правий берег', 'Київ Правий берег'),
+    ('Луцьк', 'Луцьк'),
+    ('Львів', 'Львів'),
+    ('Мукачево', 'Мукачево'),
+    ('Миколаїв', 'Миколаїв'),
+    ('Одеса', 'Одеса'),
+    ('Одеса (Котовського)', 'Одеса (Котовського)'),
+    ('Олександрія', 'Олександрія'),
+    ('Павлоград', 'Павлоград'),
+    ('Полтава', 'Полтава'),
+    ('Рівне', 'Рівне'),
+    ('Самбір', 'Самбір'),
+    ('Суми', 'Суми'),
+    ('Тернопіль', 'Тернопіль'),
+    ('Трускавець', 'Трускавець'),
+    ('Ужгород', 'Ужгород'),
+    ('Вінниця', 'Вінниця'),
+    ('Вишгород', 'Вишгород'),
+    ('Запоріжжя', 'Запоріжжя'),
+    ('Житомир', 'Житомир'),
 ]
 
 # Create your models here.
@@ -204,6 +252,24 @@ class Delivery(models.Model):
         blank=True,
         related_name='deliveries',
     )
+    courier = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='assigned_deliveries',
+    )
+    tracking_token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    completion_photo = models.ImageField(
+        upload_to='delivery_proofs/%Y/%m/',
+        blank=True,
+    )
+    city = models.CharField(
+        max_length=100,
+        choices=COURIER_CITY_CHOICES,
+        blank=True,
+        default='',
+    )
     name = models.CharField(max_length=100, default='')
     address = models.TextField(default='')
     phone_number = models.CharField(max_length=15, default='')
@@ -216,6 +282,15 @@ class Delivery(models.Model):
         default='tothecourier',
     )
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='new')
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['courier'],
+                condition=models.Q(status__in=['cooking', 'on_way']),
+                name='one_active_delivery_per_courier',
+            ),
+        ]
 
     def __str__(self):
         return f'Замовлення #{self.pk}'

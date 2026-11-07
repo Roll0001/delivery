@@ -5,24 +5,26 @@
 {% block content %}
 <section class="home-hero">
 	<div>
-		<div class="eyebrow">Їжа, яку хочеться повторити</div>
-		<h1>Смачне вже<br>по дорозі.</h1>
-		<p>Обирайте улюблені страви з найкращих ресторанів вашого міста. Швидко, просто і з турботою.</p>
+		<div class="eyebrow">Смачно. Локально. З турботою.</div>
+		<h1>Твої смаки.<br>Твоє місто.</h1>
+		<p>Улюблені страви та необхідні покупки — від закладів поруч до твоїх дверей.</p>
 		<form class="search" method="get">
-			<input type="search" name="q" value="{{ query }}" placeholder="Пошук ресторану або адреси" aria-label="Пошук ресторану">
-			<button class="button" type="submit">Знайти</button>
+			<input type="search" name="q" value="{{ query }}" placeholder="Знайди заклад або адресу" aria-label="Пошук закладу або адреси">
+			<button class="button" type="submit">Шукати <span aria-hidden="true">→</span></button>
 		</form>
+		<a class="hero-btn hero-btn-light" href="#restaurants">Дивитися заклади ↓</a>
 		{% if user.is_staff %}
 			<a class="button" href="{% url 'restoransaddlist' %}">Заявки ресторанів</a>
 		{% endif %}
 	</div>
-	<div class="hero-art" aria-hidden="true"></div>
+	<div class="hero-art" role="img" aria-label="Свіжа страва з добірних інгредієнтів"></div>
 </section>
 
 <section class="section" aria-label="Категорії каталогу">
 	<div class="category-columns">
 		<div class="category-panel">
-			<h2>Страви</h2>
+			<div class="eyebrow">Знайди свій настрій</div>
+			<h2>Що сьогодні смакує?</h2>
 			<div class="category-buttons">
 				{% for value, label in dish_type_choices %}
 					<a class="category-button{% if category_kind == 'dish' and category == value %} active{% endif %}"
@@ -32,7 +34,8 @@
 			</div>
 		</div>
 		<div class="category-panel">
-			<h2>Продукти</h2>
+			<div class="eyebrow">Ще трохи зручності</div>
+			<h2>Що потрібно додому?</h2>
 			<div class="category-buttons">
 				{% for value, label in product_type_choices %}
 					<a class="category-button{% if category_kind == 'product' and category == value %} active{% endif %}"
@@ -96,7 +99,7 @@
 {% endif %}
 
 <section class="section" id="restaurants">
-	<div class="section-head"><h2>{% if customer_city %}Ресторани у місті {{ customer_city }}{% else %}Ресторани поруч{% endif %}</h2><span class="eyebrow">{{ restaurants|length }} місць</span></div>
+	<div class="section-head"><div><span class="eyebrow">Добірка для тебе</span><h2>{% if customer_city %}Заклади у місті {{ customer_city }}{% else %}Заклади поруч{% endif %}</h2></div><span class="meta-pill">{{ restaurants|length }} місць</span></div>
 	<div class="restaurant-grid">
 		{% for restaurant in restaurants %}
 			<article class="restaurant-card">

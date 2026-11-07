@@ -5,32 +5,35 @@
 {% block content %}
 <section class="section">
     <div class="section-head">
-        <h2>Заявки на реєстрацію ресторанів</h2>
+        <div><span class="eyebrow">Керування платформою</span><h2>Заявки на реєстрацію</h2></div>
+        <span class="meta-pill">{{ applications|length }} заявок</span>
     </div>
 
     {% if applications %}
-        <div class="restaurant-grid" style="grid-template-columns:1fr;">
+        <div class="application-grid">
             {% for app in applications %}
-                <article class="restaurant-card" style="padding:18px; min-height:auto;">
-                    <div class="restaurant-copy">
-                        <h3>{{ app.name }}</h3>
-                        <p><strong>Контакт:</strong> {{ app.contact_name }}</p>
-                        <p><strong>Телефон:</strong> {{ app.phone_number }}</p>
-                        <p><strong>Email:</strong> {{ app.email|default:'—' }}</p>
-                        <p><strong>Місто:</strong> {{ app.get_city_display|default:'—' }}</p>
-                        {% if app.address %}<p><strong>Адреса:</strong> {{ app.address }}</p>{% endif %}
-                        <p><strong>Години:</strong> {{ app.opening_hours }}</p>
-                        <p><strong>Статус:</strong> {{ app.get_status_display }}</p>
+                <article class="application-card">
+                    <div class="application-card-heading">
+                        <div><span class="eyebrow">Заявка #{{ app.id }}</span><h3>{{ app.name }}</h3></div>
+                        <span class="order-status order-status-{{ app.status }}">{{ app.get_status_display }}</span>
+                    </div>
+                    <div class="order-card-grid">
+                        <p><span>Контакт</span><strong>{{ app.contact_name }}</strong></p>
+                        <p><span>Телефон</span><strong><a href="tel:{{ app.phone_number }}">{{ app.phone_number }}</a></strong></p>
+                        <p><span>Email</span><strong>{{ app.email|default:'—' }}</strong></p>
+                        <p><span>Місто</span><strong>{{ app.get_city_display|default:'—' }}</strong></p>
+                        {% if app.address %}<p><span>Адреса</span><strong>{{ app.address }}</strong></p>{% endif %}
+                        <p><span>Години роботи</span><strong>{{ app.opening_hours|default:'—' }}</strong></p>
                     </div>
                     {% if app.status == 'pending' %}
-                        <div style="display:flex; gap:12px; margin-top:16px;">
+                        <div class="application-actions">
                             <form method="post" action="{% url 'approve_restaurant_request' app.id %}">
                                 {% csrf_token %}
-                                <button class="hero-btn primary" style="border:0; cursor:pointer;" type="submit">Схвалити</button>
+                                <button class="application-approve" type="submit">✓ Схвалити заявку</button>
                             </form>
                             <form method="post" action="{% url 'reject_restaurant_request' app.id %}">
                                 {% csrf_token %}
-                                <button class="hero-btn secondary" style="border:0; cursor:pointer;" type="submit">Відхилити</button>
+                                <button class="application-reject" type="submit">Відхилити</button>
                             </form>
                         </div>
                     {% endif %}
@@ -38,7 +41,7 @@
             {% endfor %}
         </div>
     {% else %}
-        <p class="empty">Наразі немає заявок на реєстрацію.</p>
+        <div class="page-empty"><span aria-hidden="true">✨</span><h3>Черга порожня</h3><p>Нові заявки закладів з’являться тут.</p></div>
     {% endif %}
 </section>
 {% endblock %}

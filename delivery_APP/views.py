@@ -1,11 +1,15 @@
 from django.contrib.auth import get_user_model
-from django.contrib.auth.decorators import user_passes_test
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.db import IntegrityError, transaction
 from django.db.models import DecimalField, ExpressionWrapper, F, Q
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views.decorators.http import require_POST
 
-from auth_system.models import RestaurantProfile
+from auth_system.models import CourierProfile, RestaurantProfile
 from .forms import (
+    CompletedDeliveryForm,
     DishForm,
     MenuDishForm,
     OrderForm,
@@ -142,13 +146,168 @@ def restaurant_orders(request):
 
     orders = Delivery.objects.filter(
         cart__restaurant__owner=request.user,
-    ).select_related('cart', 'cart__restaurant').annotate(
+    ).select_related('cart', 'cart__restaurant', 'courier').annotate(
         total=ExpressionWrapper(
             F('cart__price') * F('quantity'),
             output_field=DecimalField(max_digits=10, decimal_places=2),
         ),
     ).order_by('-order_time', '-pk')
     return render(request, 'orders.html', {'orders': orders})
+
+
+def _courier_order_queryset():
+    return Delivery.objects.select_related(
+        'cart',
+        'cart__restaurant',
+        'courier',
+    ).annotate(
+        total=ExpressionWrapper(
+            F('cart__price') * F('quantity'),
+            output_field=DecimalField(max_digits=10, decimal_places=2),
+        ),
+    )
+
+
+@login_required(login_url='courier_login')
+def courier_home(request):
+    profile = getattr(request.user, 'courier_profile', None)
+    if not profile:
+        return redirect('home')
+
+    active_order = _courier_order_queryset().filter(
+        courier=request.user,
+        status__in=['cooking', 'on_way'],
+    ).first()
+    available_orders = _courier_order_queryset().filter(
+        city=profile.city,
+        status='new',
+        courier__isnull=True,
+    ).order_by('order_time', 'pk')
+    completed_orders = _courier_order_queryset().filter(
+        courier=request.user,
+        status='delivered',
+    ).order_by('-order_time', '-pk')[:10]
+    return render(request, 'courier.html', {
+        'active_order': active_order,
+        'available_orders': available_orders,
+        'completed_orders': completed_orders,
+        'completion_form': CompletedDeliveryForm(),
+    })
+
+
+@login_required(login_url='courier_login')
+@require_POST
+def accept_delivery(request, delivery_id):
+    profile = getattr(request.user, 'courier_profile', None)
+    if not profile:
+        return redirect('home')
+
+    try:
+        with transaction.atomic():
+            CourierProfile.objects.select_for_update().get(user=request.user)
+            if Delivery.objects.filter(
+                courier=request.user,
+                status__in=['cooking', 'on_way'],
+            ).exists():
+                messages.error(request, 'Спочатку завершіть поточну доставку.')
+                return redirect('courier_home')
+
+            order = Delivery.objects.select_for_update().filter(
+                pk=delivery_id,
+                city=profile.city,
+                status='new',
+                courier__isnull=True,
+            ).first()
+            if not order:
+                messages.error(
+                    request,
+                    'Це замовлення вже недоступне або належить до іншого міста.',
+                )
+                return redirect('courier_home')
+
+            order.courier = request.user
+            order.status = 'on_way'
+            order.save(update_fields=['courier', 'status'])
+    except IntegrityError:
+        messages.error(request, 'Ви вже маєте активну доставку.')
+    else:
+        messages.success(request, 'Замовлення прийнято. Гарної доставки!')
+
+    return redirect('courier_home')
+
+
+@login_required(login_url='courier_login')
+@require_POST
+def complete_delivery(request, delivery_id):
+    if not getattr(request.user, 'courier_profile', None):
+        return redirect('home')
+
+    order = get_object_or_404(
+        Delivery,
+        pk=delivery_id,
+        courier=request.user,
+        status__in=['cooking', 'on_way'],
+    )
+    form = CompletedDeliveryForm(request.POST, request.FILES, instance=order)
+    if form.is_valid():
+        with transaction.atomic():
+            order = get_object_or_404(
+                Delivery.objects.select_for_update(),
+                pk=delivery_id,
+                courier=request.user,
+                status__in=['cooking', 'on_way'],
+            )
+            order.completion_photo = form.cleaned_data['completion_photo']
+            order.status = 'delivered'
+            order.save(update_fields=['completion_photo', 'status'])
+
+        messages.success(request, 'Доставку завершено та фото надіслано замовнику.')
+        return redirect('courier_home')
+
+    active_order = _courier_order_queryset().filter(
+        courier=request.user,
+        status__in=['cooking', 'on_way'],
+    ).first()
+    available_orders = _courier_order_queryset().filter(
+        city=request.user.courier_profile.city,
+        status='new',
+        courier__isnull=True,
+    ).order_by('order_time', 'pk')
+    completed_orders = _courier_order_queryset().filter(
+        courier=request.user,
+        status='delivered',
+    ).order_by('-order_time', '-pk')[:10]
+    return render(request, 'courier.html', {
+        'active_order': active_order,
+        'available_orders': available_orders,
+        'completed_orders': completed_orders,
+        'completion_form': form,
+    })
+
+
+def completed_order(request, tracking_token):
+    order = get_object_or_404(
+        Delivery.objects.select_related('cart', 'cart__restaurant', 'courier'),
+        tracking_token=tracking_token,
+    )
+    return render(request, 'compleated.html', {'order': order})
+
+
+@login_required
+def customer_orders(request):
+    orders = Delivery.objects.filter(
+        user=request.user,
+    ).select_related(
+        'cart',
+        'cart__restaurant',
+        'courier',
+    ).annotate(
+        total=ExpressionWrapper(
+            F('cart__price') * F('quantity'),
+            output_field=DecimalField(max_digits=10, decimal_places=2),
+        ),
+    ).order_by('-order_time', '-pk')
+    return render(request, 'my_orders.html', {'orders': orders})
 
 
 def restaurant_menu(request, restaurant_id):
@@ -173,7 +332,11 @@ def place_order(request, dish_id):
         pk=dish_id,
         restaurant__isnull=False,
     )
-    form = OrderForm(request.POST or None, user=request.user)
+    form = OrderForm(
+        request.POST or None,
+        user=request.user,
+        restaurant_city=dish.restaurant.city,
+    )
     if request.method == 'POST' and form.is_valid():
         order = form.save(commit=False)
         order.cart = dish
@@ -183,6 +346,9 @@ def place_order(request, dish_id):
             'dish': dish,
             'order': order,
             'total': dish.price * order.quantity,
+            'completion_url': request.build_absolute_uri(
+                reverse('completed_order', args=[order.tracking_token])
+            ),
         })
 
     return render(request, 'order.html', {

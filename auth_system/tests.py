@@ -2,7 +2,12 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
 
-from auth_system.models import RestaurantProfile
+from auth_system.models import (
+    COURIER_CITY_CHOICES,
+    COURIER_TRANSPORT_CHOICES,
+    RestaurantProfile,
+)
+from auth_system.forms import build_username_from_name
 from delivery_APP.models import RestaurantApplication
 
 
@@ -56,6 +61,112 @@ class UserAuthenticationTests(TestCase):
         self.assertEqual(int(self.client.session['_auth_user_id']), user.pk)
         home_response = self.client.get(reverse('home'))
         self.assertTrue(home_response.context['user'].is_authenticated)
+
+
+class CourierAuthenticationTests(TestCase):
+    credentials = {
+        'first_name': 'Марія',
+        'last_name': 'Мельник',
+        'city': 'Київ Лівий берег',
+        'transport': 'electric_bicycle',
+        'password1': 'VioletTree!8291',
+        'password2': 'VioletTree!8291',
+    }
+
+    def test_registration_creates_courier_profile_and_logs_user_in(self):
+        response = self.client.post(reverse('courier_register'), self.credentials)
+
+        self.assertRedirects(response, reverse('courier_home'))
+        user = get_user_model().objects.get(username='mariia.melnyk')
+        self.assertTrue(user.check_password(self.credentials['password1']))
+        self.assertEqual(user.courier_profile.city, 'Київ Лівий берег')
+        self.assertEqual(user.courier_profile.transport, 'electric_bicycle')
+        self.assertFalse(hasattr(user, 'customer_profile'))
+        self.assertEqual(int(self.client.session['_auth_user_id']), user.pk)
+
+    def test_registration_offers_requested_city_and_transport_choices(self):
+        response = self.client.get(reverse('courier_register'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertCountEqual(
+            [city for city, _label in response.context['form'].fields['city'].choices[1:]],
+            [city for city, _label in COURIER_CITY_CHOICES],
+        )
+        self.assertEqual(
+            response.context['form'].fields['transport'].choices,
+            COURIER_TRANSPORT_CHOICES,
+        )
+        self.assertEqual(
+            list(response.context['form'].fields),
+            ['first_name', 'last_name', 'city', 'transport', 'password1', 'password2'],
+        )
+
+    def test_courier_can_log_in_with_first_name_last_name_and_password(self):
+        self.client.post(reverse('courier_register'), self.credentials)
+        self.client.get(reverse('logout'))
+
+        response = self.client.post(reverse('courier_login'), {
+            'first_name': 'Марія',
+            'last_name': 'Мельник',
+            'password': self.credentials['password1'],
+        })
+
+        self.assertRedirects(response, reverse('courier_home'))
+        self.assertEqual(
+            int(self.client.session['_auth_user_id']),
+            get_user_model().objects.get(username='mariia.melnyk').pk,
+        )
+        self.assertContains(self.client.get(reverse('courier_home')), 'Київ Лівий берег')
+
+    def test_non_courier_cannot_use_courier_login(self):
+        user = get_user_model().objects.create_user(
+            username=build_username_from_name('Покупець', 'Користувач'),
+            password=self.credentials['password1'],
+            first_name='Покупець',
+            last_name='Користувач',
+        )
+
+        response = self.client.post(reverse('courier_login'), {
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'password': self.credentials['password1'],
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(
+            "Цей обліковий запис не належить кур'єру.",
+            response.context['form'].non_field_errors(),
+        )
+        self.assertNotIn('_auth_user_id', self.client.session)
+
+    def test_invalid_courier_password_is_rejected(self):
+        response = self.client.post(reverse('courier_register'), self.credentials)
+        self.assertRedirects(response, reverse('courier_home'))
+        self.client.get(reverse('logout'))
+
+        response = self.client.post(reverse('courier_login'), {
+            'first_name': 'Марія',
+            'last_name': 'Мельник',
+            'password': 'incorrect-password',
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(
+            "Неправильне ім'я, прізвище або пароль.",
+            response.context['form'].non_field_errors(),
+        )
+        self.assertNotIn('_auth_user_id', self.client.session)
+
+    def test_customer_cannot_open_courier_dashboard(self):
+        user = get_user_model().objects.create_user(
+            username='customer.user',
+            password=self.credentials['password1'],
+        )
+        self.client.force_login(user)
+
+        response = self.client.get(reverse('courier_home'))
+
+        self.assertRedirects(response, reverse('home'))
 
 
 class RestaurantAuthenticationTests(TestCase):

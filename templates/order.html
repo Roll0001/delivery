@@ -9,6 +9,7 @@
             <div class="eyebrow">Замовлення №{{ order.id }}</div>
             <h1>Дякуємо за замовлення!</h1>
             <p class="auth-subtitle">Заклад зв'яжеться з вами для підтвердження доставки.</p>
+            <p>Посилання на стан замовлення та фото після доставки: <a href="{{ completion_url }}">переглянути замовлення</a>.</p>
             <div class="restaurant-copy">
                 <h3>{{ dish.name }}</h3>
                 <p><strong>Заклад:</strong> {{ dish.restaurant.name }}</p>
@@ -16,8 +17,10 @@
                 <p><strong>Разом:</strong> {{ total }} ₴</p>
                 <p><strong>Отримувач:</strong> {{ order.name }}</p>
                 <p><strong>Адреса:</strong> {{ order.address }}</p>
+                <p><strong>Місто доставки:</strong> {{ order.get_city_display }}</p>
                 <p><strong>Телефон:</strong> {{ order.phone_number }}</p>
                 <p><strong>Оплата:</strong> {{ order.get_payment_method_display }}</p>
+                <p class="auth-subtitle">Кур’єр із міста {{ order.get_city_display }} зможе прийняти це замовлення.</p>
             </div>
             <a class="button" href="{% url 'restaurant_menu' dish.restaurant_id %}">Повернутися до меню</a>
         </div>
@@ -43,7 +46,7 @@
 
         <div class="auth-form-panel" style="max-width:720px; margin:30px auto;">
             <h2>Дані доставки</h2>
-            <p class="auth-subtitle">Заповніть контактні дані, щоб заклад міг доставити замовлення.</p>
+            <p class="auth-subtitle">Вкажіть контактні дані та місто доставки, щоб замовлення побачили кур’єри вашого міста.</p>
             <form method="post">
                 {% csrf_token %}
                 {% for field in form %}

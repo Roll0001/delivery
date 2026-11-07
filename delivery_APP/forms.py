@@ -3,6 +3,7 @@ from django import forms
 from .models import (
     CITY_CHOICES,
     CartOfMenu,
+    COURIER_CITY_CHOICES,
     Delivery,
     Dish,
     ProductType,
@@ -150,12 +151,17 @@ class MenuDishForm(forms.ModelForm):
 
 class OrderForm(forms.ModelForm):
     quantity = forms.IntegerField(min_value=1, max_value=99, label='Кількість')
+    city = forms.ChoiceField(
+        choices=[('', 'Оберіть місто доставки'), *COURIER_CITY_CHOICES],
+        label='Місто доставки',
+    )
 
     class Meta:
         model = Delivery
-        fields = ['name', 'address', 'phone_number', 'quantity', 'payment_method']
+        fields = ['name', 'city', 'address', 'phone_number', 'quantity', 'payment_method']
         labels = {
             'name': "Ім'я отримувача",
+            'city': 'Місто доставки',
             'address': 'Адреса доставки',
             'phone_number': 'Номер телефону',
             'quantity': 'Кількість',
@@ -168,6 +174,35 @@ class OrderForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         user = kwargs.pop('user', None)
+        restaurant_city = kwargs.pop('restaurant_city', '')
         super().__init__(*args, **kwargs)
+        valid_cities = {city for city, _label in COURIER_CITY_CHOICES}
+        customer_profile = (
+            getattr(user, 'customer_profile', None)
+            if user and user.is_authenticated
+            else None
+        )
+        customer_city = customer_profile.city if customer_profile else ''
+        initial_city = (
+            customer_city
+            if customer_profile
+            else restaurant_city
+        )
+        if initial_city in valid_cities:
+            self.fields['city'].initial = initial_city
         if user and user.is_authenticated:
             self.fields['name'].initial = user.get_full_name() or user.username
+
+
+class CompletedDeliveryForm(forms.ModelForm):
+    completion_photo = forms.ImageField(
+        required=True,
+        label='Фото підтвердження доставки',
+        widget=forms.ClearableFileInput(
+            attrs={'accept': 'image/*', 'capture': 'environment'},
+        ),
+    )
+
+    class Meta:
+        model = Delivery
+        fields = ['completion_photo']

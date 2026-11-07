@@ -2,10 +2,13 @@
 import unicodedata
 
 from django import forms
+from django.contrib.auth import authenticate
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 
 from delivery_APP.models import CITY_CHOICES
+
+from .models import COURIER_CITY_CHOICES, COURIER_TRANSPORT_CHOICES
 
 
 _UKRAINIAN_TRANSLITERATION = {
@@ -91,6 +94,61 @@ class CustomUserCreationForm(UserCreationForm):
             "password1": "Пароль",
             "password2": "Підтвердження пароля",
         }
+
+
+class CourierCreationForm(CustomUserCreationForm):
+    city = forms.ChoiceField(
+        choices=[('', 'Оберіть місто'), *COURIER_CITY_CHOICES],
+        label='Місто',
+    )
+    transport = forms.ChoiceField(
+        choices=COURIER_TRANSPORT_CHOICES,
+        label='На чому пересуваєтеся',
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.order_fields([
+            'first_name',
+            'last_name',
+            'city',
+            'transport',
+            'password1',
+            'password2',
+        ])
+
+
+class CourierAuthenticationForm(forms.Form):
+    first_name = forms.CharField(label="Ім'я")
+    last_name = forms.CharField(label='Прізвище')
+    password = forms.CharField(
+        label='Пароль',
+        strip=False,
+        widget=forms.PasswordInput(attrs={'autocomplete': 'current-password'}),
+    )
+
+    def __init__(self, request=None, *args, **kwargs):
+        self.request = request
+        self.user_cache = None
+        super().__init__(*args, **kwargs)
+
+    def clean(self):
+        cleaned_data = super().clean()
+        first_name = (cleaned_data.get('first_name') or '').strip()
+        last_name = (cleaned_data.get('last_name') or '').strip()
+        password = cleaned_data.get('password')
+        if first_name and last_name and password:
+            self.user_cache = authenticate(
+                self.request,
+                username=build_username_from_name(first_name, last_name),
+                password=password,
+            )
+            if self.user_cache is None:
+                raise forms.ValidationError("Неправильне ім'я, прізвище або пароль.")
+        return cleaned_data
+
+    def get_user(self):
+        return self.user_cache
         help_texts = {
             "first_name": "",
             "last_name": "",

@@ -27,6 +27,23 @@ urlpatterns = [
     path('', delivery_app_views.home, name='home'),
     path('restaurant-home/', delivery_app_views.restaurant_home, name='restaurant_home'),
     path('restaurant-home/orders/', delivery_app_views.restaurant_orders, name='restaurant_orders'),
+    path('courier/', delivery_app_views.courier_home, name='courier_home'),
+    path(
+        'courier/orders/<int:delivery_id>/accept/',
+        delivery_app_views.accept_delivery,
+        name='accept_delivery',
+    ),
+    path(
+        'courier/orders/<int:delivery_id>/complete/',
+        delivery_app_views.complete_delivery,
+        name='complete_delivery',
+    ),
+    path(
+        'compleated/<uuid:tracking_token>/',
+        delivery_app_views.completed_order,
+        name='completed_order',
+    ),
+    path('my-orders/', delivery_app_views.customer_orders, name='customer_orders'),
     path('menu/<int:restaurant_id>/', delivery_app_views.restaurant_menu, name='restaurant_menu'),
     path('order/<int:dish_id>/', delivery_app_views.place_order, name='place_order'),
     path('restoransaddlist/', delivery_app_views.restaurant_requests, name='restoransaddlist'),
