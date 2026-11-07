@@ -5,11 +5,11 @@
 {% block content %}
 <section class="section">
     <div class="section-head">
-        <h2>Кабінет {{ is_restaurant|yesno:"ресторану,магазину" }}</h2>
-        <span class="eyebrow">Панель управління</span>
+        <div><span class="eyebrow">Панель управління</span><h2>Кабінет {{ is_restaurant|yesno:"ресторану,магазину" }}</h2></div>
+        <span class="meta-pill">{% if is_restaurant %}🍽️ Ресторан{% else %}🛍️ Магазин{% endif %}</span>
     </div>
 
-    <div style="display:flex; flex-wrap:wrap; gap:16px; margin-bottom:30px;">
+    <div class="dashboard-actions">
         {% if restaurants %}
             <a class="hero-btn primary" href="{% url 'add_restaurant_info' %}">Редагувати інформацію про заклад</a>
             <a class="hero-btn secondary" href="{% url 'create_dish' %}">{% if is_restaurant %}Додати страву{% else %}Додати товар{% endif %}</a>
@@ -67,7 +67,7 @@
                         <p>{{ dish.ingridients }}</p>
                         <p><strong>Вага:</strong> {{ dish.weight }}</p>
                         <p><strong>Час:</strong> {{ dish.time_to_cook }} хв</p>
-                        <div style="display:flex; align-items:center; gap:10px; margin-top:8px;">
+                        <div class="dashboard-item-actions">
                             <a class="hero-btn secondary" style="margin:0;" href="{% url 'edit_catalog_dish' dish.id %}">Редагувати</a>
                             <form method="post" action="{% url 'delete_catalog_dish' dish.id %}" style="margin:0;">
                                 {% csrf_token %}
@@ -95,7 +95,7 @@
                             <p>{{ dish.ingridients }}</p>
                             <p><strong>Вага:</strong> {{ dish.weight }} г</p>
                             <p><strong>Час:</strong> {{ dish.time_to_cook }} хв</p>
-                            <div style="display:flex; align-items:center; gap:10px; margin-top:8px;">
+                            <div class="dashboard-item-actions">
                                 <a class="hero-btn secondary" style="margin:0;" href="{% url 'edit_dish' dish.id %}">Редагувати</a>
                                 <form method="post" action="{% url 'delete_dish' dish.id %}" style="margin:0;">
                                     {% csrf_token %}
@@ -127,7 +127,7 @@
                         </div>
                         <p><strong>Категорія:</strong> {{ product.get_product_type_display|default:'Інше' }}</p>
                         <p><strong>Вага або об’єм:</strong> {{ product.weight }}</p>
-                        <div style="display:flex; align-items:center; gap:10px; margin-top:8px;">
+                        <div class="dashboard-item-actions">
                             <a class="hero-btn secondary" style="margin:0;" href="{% url 'edit_product' product.id %}">Редагувати</a>
                             <form method="post" action="{% url 'delete_product' product.id %}" style="margin:0;">
                                 {% csrf_token %}

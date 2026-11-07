@@ -1,0 +1,450 @@
+{% extends 'base.html' %}
+
+{% block title %}Кабінет кур'єра{% endblock %}
+
+{% block content %}
+<style>
+    .courier-dashboard {
+        --courier-forest: #153f32;
+        --courier-green: #236449;
+        --courier-lime: #d9ed87;
+        --courier-orange: #ff916f;
+        --courier-ink: #17251f;
+        --courier-muted: #78847c;
+        max-width: 1240px;
+        margin: 0 auto;
+        padding: 32px 32px 82px;
+    }
+    .courier-hero {
+        position: relative;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 220px;
+        gap: 30px;
+        align-items: center;
+        overflow: hidden;
+        min-height: 270px;
+        padding: 38px 44px;
+        border-radius: 26px;
+        color: #fffdf8;
+        background:
+            radial-gradient(ellipse at 87% 14%, rgba(217,237,135,.24), transparent 32%),
+            linear-gradient(118deg, #12382d 0%, #1f5944 58%, #34704d 100%);
+        box-shadow: 0 24px 60px rgba(21,63,50,.18);
+    }
+    .courier-hero::before,
+    .courier-hero::after {
+        position: absolute;
+        content: "";
+        border: 1px solid rgba(255,255,255,.12);
+        border-radius: 50%;
+        pointer-events: none;
+    }
+    .courier-hero::before { width: 300px; height: 300px; right: 12px; top: -180px; }
+    .courier-hero::after { width: 220px; height: 220px; right: 46px; top: -140px; }
+    .courier-hero-copy { position: relative; z-index: 1; }
+    .courier-eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--courier-lime);
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 1.8px;
+        text-transform: uppercase;
+    }
+    .courier-eyebrow::before {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--courier-lime);
+        content: "";
+        box-shadow: 0 0 14px rgba(217,237,135,.8);
+    }
+    .courier-hero h1 {
+        margin: 17px 0 11px;
+        font: 700 clamp(34px, 5vw, 58px)/1.04 'Playfair Display', serif;
+        letter-spacing: -1.7px;
+    }
+    .courier-hero p { max-width: 540px; margin: 0; color: rgba(255,253,248,.74); line-height: 1.7; }
+    .courier-hero-profile {
+        display: inline-flex;
+        flex-wrap: wrap;
+        gap: 9px;
+        margin-top: 21px;
+    }
+    .courier-hero-profile span {
+        padding: 8px 12px;
+        border: 1px solid rgba(255,255,255,.16);
+        border-radius: 999px;
+        background: rgba(255,255,255,.08);
+        color: #fffdf8;
+        font-size: 12px;
+        font-weight: 600;
+    }
+    .courier-hero-art {
+        position: relative;
+        z-index: 1;
+        display: grid;
+        width: 172px;
+        height: 172px;
+        place-items: center;
+        justify-: center;
+        border: 1px solid rgba(255,255,255,.2);
+        border-radius: 50%;
+        background: radial-gradient(circle at 34% 27%, rgba(255,255,255,.22), rgba(255,255,255,.04) 66%);
+        box-shadow: inset 0 0 0 13px rgba(255,255,255,.035), 0 18px 40px rgba(0,0,0,.1);
+        font-size: 76px;
+        transform: rotate(-8deg);
+    }
+    .courier-stats {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 15px;
+        margin: 19px 0 48px;
+    }
+    .courier-stat {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        min-height: 96px;
+        padding: 17px 20px;
+        border: 1px solid #e8e7dc;
+        border-radius: 17px;
+        background: #fffdf8;
+        box-shadow: 0 8px 24px rgba(23,37,31,.035);
+    }
+    .courier-stat-icon {
+        display: grid;
+        flex: 0 0 48px;
+        width: 48px;
+        height: 48px;
+        place-items: center;
+        border-radius: 15px;
+        background: #edf4df;
+        font-size: 22px;
+    }
+    .courier-stat:nth-child(2) .courier-stat-icon { background: #fff0e9; }
+    .courier-stat:nth-child(3) .courier-stat-icon { background: #eaf2ed; }
+    .courier-stat-value { display: block; color: var(--courier-ink); font-size: 25px; font-weight: 700; line-height: 1; }
+    .courier-stat-label { display: block; margin-top: 6px; color: var(--courier-muted); font-size: 12px; }
+    .courier-section { margin-top: 42px; }
+    .courier-section-heading {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 19px;
+    }
+    .courier-section-kicker { color: #df7354; font-size: 10px; font-weight: 700; letter-spacing: 1.7px; text-transform: uppercase; }
+    .courier-section-heading h2 {
+        margin: 5px 0 0;
+        color: var(--courier-ink);
+        font: 700 clamp(25px, 3vw, 34px)/1.1 'Playfair Display', serif;
+        letter-spacing: -.7px;
+    }
+    .courier-section-count {
+        flex: 0 0 auto;
+        padding: 8px 12px;
+        border-radius: 999px;
+        background: #eaf1e7;
+        color: #315d46;
+        font-size: 12px;
+        font-weight: 700;
+    }
+    .courier-active-card {
+        position: relative;
+        overflow: hidden;
+        padding: 25px;
+        border: 1px solid #f4c8b7;
+        border-radius: 20px;
+        background:
+            radial-gradient(ellipse at 100% 0%, rgba(255,145,111,.15), transparent 40%),
+            #fffaf5;
+        box-shadow: 0 14px 36px rgba(137,73,48,.08);
+    }
+    .courier-active-card::before {
+        position: absolute;
+        inset: 0 auto 0 0;
+        width: 5px;
+        background: linear-gradient(var(--courier-orange), #f6c55b);
+        content: "";
+    }
+    .courier-order-top {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #efe8de;
+    }
+    .courier-order-number { margin: 0; color: var(--courier-ink); font-size: 19px; font-weight: 700; }
+    .courier-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 8px 12px;
+        border-radius: 999px;
+        background: #fff0e8;
+        color: #a64e32;
+        font-size: 11px;
+        font-weight: 700;
+    }
+    .courier-status::before { width: 7px; height: 7px; border-radius: 50%; background: #f27b56; content: ""; }
+    .courier-order-details {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px 26px;
+        padding: 19px 0;
+    }
+    .courier-detail { display: flex; align-items: flex-start; gap: 11px; min-width: 0; }
+    .courier-detail-icon {
+        display: grid;
+        flex: 0 0 35px;
+        width: 35px;
+        height: 35px;
+        place-items: center;
+        border-radius: 11px;
+        background: #f1f3eb;
+        font-size: 16px;
+    }
+    .courier-detail-label { display: block; margin: 1px 0 4px; color: var(--courier-muted); font-size: 11px; }
+    .courier-detail-value { display: block; overflow-wrap: anywhere; color: var(--courier-ink); font-size: 13px; font-weight: 700; }
+    .courier-detail-value a { color: #236449; text-decoration: underline; text-underline-offset: 3px; }
+    .courier-proof-form {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: end;
+        gap: 17px;
+        padding: 17px;
+        border-radius: 15px;
+        background: #f4f3ec;
+    }
+    .courier-proof-field label { display: block; margin-bottom: 8px; color: var(--courier-ink); font-size: 12px; font-weight: 700; }
+    .courier-proof-field input[type="file"] {
+        width: 100%;
+        min-height: 44px;
+        padding: 7px;
+        border: 1px dashed #b6c3af;
+        border-radius: 9px;
+        background: #fffdf8;
+        color: #56665b;
+        font: 12px 'DM Sans', sans-serif;
+    }
+    .courier-proof-field input[type="file"]::file-selector-button {
+        margin-right: 10px;
+        padding: 8px 11px;
+        border: 0;
+        border-radius: 7px;
+        background: #e4edcf;
+        color: #315d46;
+        font: 700 11px 'DM Sans', sans-serif;
+        cursor: pointer;
+    }
+    .courier-proof-button,
+    .courier-accept-button {
+        display: inline-flex;
+        min-height: 46px;
+        align-items: center;
+        justify-content: center;
+        gap: 9px;
+        padding: 12px 17px;
+        border: 0;
+        border-radius: 10px;
+        background: #dff08f;
+        color: #203b2e;
+        font: 700 12px 'DM Sans', sans-serif;
+        cursor: pointer;
+        transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
+    }
+    .courier-proof-button:hover,
+    .courier-accept-button:hover { transform: translateY(-2px); box-shadow: 0 9px 18px rgba(31,89,68,.15); }
+    .courier-proof-button:hover { background: #d1e86f; }
+    .courier-available-grid,
+    .courier-history-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 17px; }
+    .courier-available-card {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        padding: 21px;
+        border: 1px solid #e8e7dc;
+        border-radius: 17px;
+        background: #fffdf8;
+        box-shadow: 0 9px 24px rgba(23,37,31,.035);
+        transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+    }
+    .courier-available-card:hover { transform: translateY(-3px); border-color: #cbd9bf; box-shadow: 0 15px 32px rgba(23,37,31,.08); }
+    .courier-available-card .courier-order-details { flex: 1; gap: 13px 15px; }
+    .courier-restaurant { margin: 0 0 4px; color: #829087; font-size: 11px; }
+    .courier-dish-title { margin: 0; color: var(--courier-ink); font: 700 19px/1.3 'Playfair Display', serif; }
+    .courier-order-price { padding: 8px 11px; border-radius: 9px; background: #eff5dd; color: #315d46; font-size: 15px; font-weight: 700; white-space: nowrap; }
+    .courier-accept-button { width: 100%; margin-top: 5px; background: #1f5944; color: #fffdf8; }
+    .courier-accept-button:hover { background: #164431; }
+    .courier-active-note { margin: 14px 0 0; color: #8d5b47; font-size: 12px; line-height: 1.6; }
+    .courier-empty {
+        display: grid;
+        min-height: 195px;
+        place-items: center;
+        padding: 26px;
+        border: 1px dashed #cfd7c9;
+        border-radius: 18px;
+        background: linear-gradient(135deg, #fbfcf6, #f3f5ec);
+        text-align: center;
+    }
+    .courier-empty-icon { display: block; margin-bottom: 8px; font-size: 36px; }
+    .courier-empty strong { display: block; color: var(--courier-ink); font: 700 20px 'Playfair Display', serif; }
+    .courier-empty span { display: block; max-width: 340px; margin-top: 6px; color: var(--courier-muted); font-size: 12px; line-height: 1.6; }
+    .courier-messages { display: grid; gap: 8px; margin: 18px 0; }
+    .courier-message { padding: 12px 16px; border: 1px solid #d5e5c7; border-radius: 11px; background: #eff7e8; color: #315d46; font-size: 13px; }
+    .courier-message.error { border-color: #f0c5b5; background: #fff0e9; color: #984b32; }
+    .courier-history-card { padding: 17px; border: 1px solid #e8e7dc; border-radius: 15px; background: rgba(255,253,248,.8); }
+    .courier-history-card h3 { margin: 0 0 8px; color: var(--courier-ink); font-size: 14px; }
+    .courier-history-card p { margin: 5px 0 0; color: var(--courier-muted); font-size: 12px; line-height: 1.55; }
+    .courier-history-check { float: right; color: #4a8b61; font-size: 16px; }
+    @media (max-width: 760px) {
+        .courier-dashboard { padding: 20px 20px 58px; }
+        .courier-hero { grid-template-columns: 1fr 100px; gap: 14px; min-height: 230px; padding: 27px 24px; border-radius: 20px; }
+        .courier-hero-art { width: 92px; height: 92px; font-size: 43px; }
+        .courier-stats { gap: 9px; margin-bottom: 38px; }
+        .courier-stat { min-height: 82px; gap: 9px; padding: 12px 10px; }
+        .courier-stat-icon { flex-basis: 36px; width: 36px; height: 36px; border-radius: 11px; font-size: 17px; }
+        .courier-stat-value { font-size: 21px; }
+        .courier-stat-label { font-size: 10px; }
+        .courier-available-grid, .courier-history-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 500px) {
+        .courier-hero { grid-template-columns: 1fr; }
+        .courier-hero-art { display: none; }
+        .courier-stats { grid-template-columns: 1fr; }
+        .courier-stat { min-height: 68px; }
+        .courier-order-details { grid-template-columns: 1fr; }
+        .courier-proof-form { grid-template-columns: 1fr; }
+        .courier-proof-button { width: 100%; }
+        .courier-section-heading { align-items: center; }
+    }
+</style>
+
+<main class="courier-dashboard">
+    <section class="courier-hero">
+        <div class="courier-hero-copy">
+            <span class="courier-eyebrow">Кабінет кур'єра · {{ user.courier_profile.get_city_display }}</span>
+            <h1>Привіт, {{ user.first_name }}!</h1>
+            <p>Твій наступний маршрут починається тут. Переглядай доступні замовлення, доставляй із турботою та ділись фото виконаної доставки.</p>
+            <div class="courier-hero-profile">
+                <span>📍 {{ user.courier_profile.get_city_display }}</span>
+                <span>🚲 {{ user.courier_profile.get_transport_display }}</span>
+            </div>
+        </div>
+        <div class="courier-hero-art" aria-hidden="true">🛵</div>
+    </section>
+
+    <section class="courier-stats" aria-label="Статистика кур'єра">
+        <article class="courier-stat">
+            <span class="courier-stat-icon" aria-hidden="true">📦</span>
+            <span><strong class="courier-stat-value">{{ available_orders|length }}</strong><span class="courier-stat-label">Доступні замовлення</span></span>
+        </article>
+        <article class="courier-stat">
+            <span class="courier-stat-icon" aria-hidden="true">🛣️</span>
+            <span><strong class="courier-stat-value">{% if active_order %}1{% else %}0{% endif %}</strong><span class="courier-stat-label">Активна доставка</span></span>
+        </article>
+        <article class="courier-stat">
+            <span class="courier-stat-icon" aria-hidden="true">✅</span>
+            <span><strong class="courier-stat-value">{{ completed_orders|length }}</strong><span class="courier-stat-label">Останні виконані</span></span>
+        </article>
+    </section>
+
+    {% if messages %}
+        <div class="courier-messages" role="status">
+            {% for message in messages %}
+                <div class="courier-message{% if 'error' in message.tags %} error{% endif %}">{{ message }}</div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    {% if active_order %}
+        <section class="courier-section">
+            <div class="courier-section-heading">
+                <div><span class="courier-section-kicker">У роботі</span><h2>Твоя активна доставка</h2></div>
+                <span class="courier-status">{{ active_order.get_status_display }}</span>
+            </div>
+            <article class="courier-active-card">
+                <div class="courier-order-top">
+                    <h3 class="courier-order-number">Замовлення №{{ active_order.pk }}</h3>
+                    <span class="courier-order-price">{{ active_order.total|floatformat:2 }} ₴</span>
+                </div>
+                <div class="courier-order-details">
+                    <div class="courier-detail"><span class="courier-detail-icon" aria-hidden="true">🍽️</span><span><span class="courier-detail-label">Заклад і страва</span><strong class="courier-detail-value">{{ active_order.cart.restaurant.name }} · {{ active_order.cart.name }} × {{ active_order.quantity }}</strong></span></div>
+                    <div class="courier-detail"><span class="courier-detail-icon" aria-hidden="true">📍</span><span><span class="courier-detail-label">Адреса доставки</span><strong class="courier-detail-value">{{ active_order.get_city_display }}, {{ active_order.address }}</strong></span></div>
+                    <div class="courier-detail"><span class="courier-detail-icon" aria-hidden="true">🙋</span><span><span class="courier-detail-label">Отримувач</span><strong class="courier-detail-value">{{ active_order.name }}</strong></span></div>
+                    <div class="courier-detail"><span class="courier-detail-icon" aria-hidden="true">☎️</span><span><span class="courier-detail-label">Телефон замовника</span><strong class="courier-detail-value"><a href="tel:{{ active_order.phone_number }}">{{ active_order.phone_number }}</a></strong></span></div>
+                </div>
+                <form class="courier-proof-form" method="post" enctype="multipart/form-data" action="{% url 'complete_delivery' active_order.pk %}">
+                    {% csrf_token %}
+                    <div class="courier-proof-field">
+                        <label for="{{ completion_form.completion_photo.id_for_label }}">📸 Додай фото, щоб підтвердити доставку</label>
+                        {{ completion_form.completion_photo }}
+                        {% if completion_form.completion_photo.errors %}<div class="field-error">{{ completion_form.completion_photo.errors }}</div>{% endif %}
+                    </div>
+                    <button class="courier-proof-button" type="submit">Завершити доставку <span aria-hidden="true">→</span></button>
+                </form>
+            </article>
+        </section>
+    {% endif %}
+
+    <section class="courier-section">
+        <div class="courier-section-heading">
+            <div><span class="courier-section-kicker">Поруч із тобою</span><h2>Доступні замовлення</h2></div>
+            <span class="courier-section-count">{{ available_orders|length }} у твоєму місті</span>
+        </div>
+        {% if available_orders %}
+            <div class="courier-available-grid">
+                {% for order in available_orders %}
+                    <article class="courier-available-card">
+                        <div class="courier-order-top">
+                            <div><p class="courier-restaurant">Замовлення №{{ order.pk }} · {{ order.cart.restaurant.name }}</p><h3 class="courier-dish-title">{{ order.cart.name }} <span style="font:600 13px 'DM Sans',sans-serif; color:#78847c;">× {{ order.quantity }}</span></h3></div>
+                            <span class="courier-order-price">{{ order.total|floatformat:2 }} ₴</span>
+                        </div>
+                        <div class="courier-order-details">
+                            <div class="courier-detail"><span class="courier-detail-icon" aria-hidden="true">📍</span><span><span class="courier-detail-label">Куди доставити</span><strong class="courier-detail-value">{{ order.get_city_display }}, {{ order.address }}</strong></span></div>
+                            <div class="courier-detail"><span class="courier-detail-icon" aria-hidden="true">🙋</span><span><span class="courier-detail-label">Отримувач</span><strong class="courier-detail-value">{{ order.name }}</strong></span></div>
+                            <div class="courier-detail"><span class="courier-detail-icon" aria-hidden="true">☎️</span><span><span class="courier-detail-label">Телефон</span><strong class="courier-detail-value"><a href="tel:{{ order.phone_number }}">{{ order.phone_number }}</a></strong></span></div>
+                            <div class="courier-detail"><span class="courier-detail-icon" aria-hidden="true">💳</span><span><span class="courier-detail-label">Оплата</span><strong class="courier-detail-value">{{ order.get_payment_method_display }}</strong></span></div>
+                        </div>
+                        {% if active_order %}
+                            <p class="courier-active-note">Спершу заверши активну доставку — після цього зможеш прийняти наступне замовлення.</p>
+                        {% else %}
+                            <form method="post" action="{% url 'accept_delivery' order.pk %}">
+                                {% csrf_token %}
+                                <button class="courier-accept-button" type="submit">Прийняти доставку <span aria-hidden="true">→</span></button>
+                            </form>
+                        {% endif %}
+                    </article>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="courier-empty">
+                <div><span class="courier-empty-icon" aria-hidden="true">🌤️</span><strong>Поки тихо — і це теж добре</strong><span>Нові замовлення з'являться тут, щойно хтось оформить доставку у твоєму місті.</span></div>
+            </div>
+        {% endif %}
+    </section>
+
+    {% if completed_orders %}
+        <section class="courier-section">
+            <div class="courier-section-heading">
+                <div><span class="courier-section-kicker">Гарна робота</span><h2>Останні доставки</h2></div>
+                <span class="courier-section-count">Останні {{ completed_orders|length }}</span>
+            </div>
+            <div class="courier-history-grid">
+                {% for order in completed_orders %}
+                    <article class="courier-history-card">
+                        <span class="courier-history-check" aria-label="Доставлено">✓</span>
+                        <h3>Замовлення №{{ order.pk }} · {{ order.cart.name }} × {{ order.quantity }}</h3>
+                        <p>{{ order.cart.restaurant.name }} · {{ order.get_city_display }}, {{ order.address }}</p>
+                        <p><strong>{{ order.total|floatformat:2 }} ₴</strong> · {{ order.order_time|date:"d.m.Y H:i" }}</p>
+                    </article>
+                {% endfor %}
+            </div>
+        </section>
+    {% endif %}
+</main>
+{% endblock %}

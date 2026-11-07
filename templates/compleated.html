@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block title %}Виконана доставка{% endblock %}
+
+{% block content %}
+<section class="menu-page">
+    <div class="auth-form-panel delivery-proof">
+        <div class="eyebrow">Замовлення №{{ order.pk }}</div>
+        {% if order.status == 'delivered' and order.completion_photo %}
+            <h1>Замовлення доставлено!</h1>
+            <p class="auth-subtitle">Кур'єр підтвердив доставку фотографією.</p>
+            <img
+                src="{{ order.completion_photo.url }}"
+                alt="Фото підтвердження доставки замовлення №{{ order.pk }}"
+                class="delivery-proof-photo"
+            >
+        {% else %}
+            <h1>Замовлення ще доставляється</h1>
+            <p class="auth-subtitle">Коли кур'єр завершить доставку та додасть фото, воно з'явиться на цій сторінці.</p>
+        {% endif %}
+        <div class="delivery-proof-details">
+            {% if order.cart %}
+                <p><strong>Страва:</strong> {{ order.cart.name }} × {{ order.quantity }}</p>
+                <p><strong>Заклад:</strong> {{ order.cart.restaurant.name }}</p>
+            {% endif %}
+            <p><strong>Статус:</strong> {{ order.get_status_display }}</p>
+            <p><strong>Місто:</strong> {{ order.get_city_display }}</p>
+            <p><strong>Адреса доставки:</strong> {{ order.address }}</p>
+            {% if order.courier %}
+                <p><strong>Кур'єр:</strong> {{ order.courier.get_full_name|default:order.courier.username }}</p>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% if order.status != 'delivered' or not order.completion_photo %}
+<script>
+    window.setTimeout(function () {
+        window.location.reload();
+    }, 30000);
+</script>
+{% endif %}
+{% endblock %}

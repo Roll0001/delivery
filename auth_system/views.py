@@ -9,8 +9,13 @@ from django.views.decorators.http import require_GET
 from delivery_APP.forms import RestaurantApplicationForm
 from delivery_APP.models import RestaurantApplication
 
-from .forms import CustomUserCreationForm, build_username_from_name
-from .models import CustomerProfile
+from .forms import (
+    CourierAuthenticationForm,
+    CourierCreationForm,
+    CustomUserCreationForm,
+    build_username_from_name,
+)
+from .models import CourierProfile, CustomerProfile
 
 
 class EmailAuthenticationForm(AuthenticationForm):
@@ -46,6 +51,52 @@ def register_page(request):
             return redirect("home")
 
     return render(request, template_name="register.html", context={"form": form})
+
+
+def courier_register_page(request):
+    if request.user.is_authenticated:
+        return redirect(
+            "courier_home"
+            if getattr(request.user, 'courier_profile', None)
+            else "home"
+        )
+
+    form = CourierCreationForm()
+    if request.method == "POST":
+        form = CourierCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            CourierProfile.objects.create(
+                user=user,
+                city=form.cleaned_data['city'],
+                transport=form.cleaned_data['transport'],
+            )
+            login(request, user, backend='auth_system.backends.EmailBackend')
+            return redirect("courier_home")
+
+    return render(request, "courier_register.html", {"form": form})
+
+
+def courier_login_page(request):
+    if request.user.is_authenticated:
+        return redirect(
+            "courier_home"
+            if getattr(request.user, 'courier_profile', None)
+            else "home"
+        )
+
+    form = CourierAuthenticationForm(request=request)
+    if request.method == "POST":
+        form = CourierAuthenticationForm(request, data=request.POST)
+        if form.is_valid():
+            user = form.get_user()
+            if not getattr(user, 'courier_profile', None):
+                form.add_error(None, "Цей обліковий запис не належить кур'єру.")
+            else:
+                login(request, user, backend='auth_system.backends.EmailBackend')
+                return redirect("courier_home")
+
+    return render(request, "courier_login.html", {"form": form})
 
 
 def login_page(request):
