@@ -10,22 +10,38 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
+import os
 from pathlib import Path
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
+import dj_database_url
+from dotenv import load_dotenv
+
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+load_dotenv(BASE_DIR / ".env", override=False)
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
+SECRET_KEY = os.environ["SECRET_KEY"]
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-nue5)x*gtp_cvul1bpkeio((@u2wwv0x$sv834os@%b-k^25a_'
+DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+ALLOWED_HOSTS = [
+    value.strip()
+    for value in os.getenv(
+        "ALLOWED_HOSTS", "localhost,127.0.0.1,[::1]"
+    ).split(",")
+    if value.strip()
+]
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'testserver']
+CSRF_TRUSTED_ORIGINS = [
+    value.strip()
+    for value in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",")
+    if value.strip()
+]
+
+for name in ("VERCEL_URL", "VERCEL_PROJECT_PRODUCTION_URL"):
+    if os.getenv(name):
+        ALLOWED_HOSTS.append(os.environ[name])
 
 
 # Application definition
@@ -81,7 +97,15 @@ DATABASES = {
     }
 }
 
+if DATABASES["default"]["ENGINE"] == "django.db.backends.postgresql":
+    DATABASES["default"]["DISABLE_SERVER_SIDE_CURSORS"] = True
+    DATABASES["default"].setdefault("OPTIONS", {}).update(
+        sslmode="require",
+        prepare_threshold=None,
+    )
 
+    if os.getenv("VERCEL"):
+        DATABASES["default"]["CONN_MAX_AGE"] = 0
 # Password validation
 # https://docs.djangoproject.com/en/6.1/ref/settings/#auth-password-validators
 
@@ -116,16 +140,51 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
 
-STATIC_URL = 'static/'
-MEDIA_URL = 'media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
+
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+    },
+}
+
+if os.getenv("SUPABASE_S3_ENDPOINT_URL"):
+    STORAGES["default"] = {
+        "BACKEND": "storages.backends.s3.S3Storage",
+        "OPTIONS": {
+            "endpoint_url": os.environ["SUPABASE_S3_ENDPOINT_URL"],
+            "access_key": os.environ["SUPABASE_S3_ACCESS_KEY_ID"],
+            "secret_key": os.environ["SUPABASE_S3_SECRET_ACCESS_KEY"],
+            "region_name": os.environ["SUPABASE_S3_REGION_NAME"],
+            "bucket_name": os.environ["SUPABASE_STORAGE_BUCKET"],
+            "addressing_style": "path",
+            "signature_version": "s3v4",
+            "default_acl": None,
+            "file_overwrite": False,
+            "querystring_auth": True,
+            "querystring_expire": 3600,
+        },
+    }
 
 LOGIN_URL = 'login'
 AUTHENTICATION_BACKENDS = [
     'auth_system.backends.EmailBackend',
 ]
 
+if not DEBUG:
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
 
+    if os.getenv("VERCEL"):
+        SECURE_PROXY_SSL_HEADER = (
+            "HTTP_X_FORWARDED_PROTO",
+            "https",
+        )
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
 
