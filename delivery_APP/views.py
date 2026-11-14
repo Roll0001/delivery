@@ -319,7 +319,7 @@ def restaurant_menu(request, restaurant_id):
         name__in=dishes.values('name'),
     ).order_by('name')
 
-    return render(request, 'MenuOfRestorant.html', {
+    return render(request, 'menuofrestorant.html', {
         'restaurant': restaurant,
         'dishes': dishes,
         'catalog_dishes': catalog_dishes,

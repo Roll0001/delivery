@@ -578,6 +578,15 @@ class CustomerOrderTests(TestCase):
             price=120,
         )
 
+    def test_restaurant_menu_uses_existing_template(self):
+        response = self.client.get(
+            reverse('restaurant_menu', args=[self.restaurant.pk]),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'menuofrestorant.html')
+        self.assertContains(response, reverse('place_order', args=[self.dish.pk]))
+
     def test_customer_orders_page_lists_only_the_current_users_orders(self):
         customer = get_user_model().objects.create_user(
             username='customer',
