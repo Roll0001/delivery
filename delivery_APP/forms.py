@@ -94,6 +94,14 @@ class RestorantInfoForm(forms.ModelForm):
 
 
 class DishForm(forms.ModelForm):
+    def __init__(self, *args, user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        restaurants = RestorantInfo.objects.filter(owner=user).order_by('name', 'pk')
+        self.fields['restaurant'].queryset = restaurants
+        self.fields['restaurant'].required = True
+        if not self.is_bound and not self.instance.pk and restaurants.count() == 1:
+            self.initial['restaurant'] = restaurants.first()
+
     def clean_weight(self):
         weight = self.cleaned_data['weight'].strip()
         try:
@@ -106,8 +114,18 @@ class DishForm(forms.ModelForm):
 
     class Meta:
         model = Dish
-        fields = ['name', 'photo', 'dish_type', 'ingridients', 'weight', 'time_to_cook', 'price']
+        fields = [
+            'restaurant',
+            'name',
+            'photo',
+            'dish_type',
+            'ingridients',
+            'weight',
+            'time_to_cook',
+            'price',
+        ]
         labels = {
+            'restaurant': 'Заклад',
             'name': 'Назва страви',
             'photo': 'Фото страви',
             'dish_type': 'Тип страви',

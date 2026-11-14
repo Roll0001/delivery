@@ -304,6 +304,7 @@ class RestaurantManagementTests(TestCase):
         self.client.force_login(self.owner)
 
         response = self.client.post(reverse('create_dish'), {
+            'restaurant': self.restaurant.pk,
             'name': 'Burger',
             'dish_type': 'Burger',
             'ingridients': 'Beef, bun',
@@ -322,8 +323,17 @@ class RestaurantManagementTests(TestCase):
         self.assertContains(self.client.get(reverse('restaurant_home')), 'Burger')
 
     def test_customer_can_order_dish_added_by_restaurant_owner(self):
+        target_restaurant = RestorantInfo.objects.create(
+            owner=self.owner,
+            name='Lviv Bistro',
+            city='Львів',
+            address='Market street',
+            phone_number='+380501234569',
+            opening_hours='09:00-21:00',
+        )
         self.client.force_login(self.owner)
         self.client.post(reverse('create_dish'), {
+            'restaurant': target_restaurant.pk,
             'name': 'Burger',
             'dish_type': 'Burger',
             'ingridients': 'Beef, bun',
@@ -332,21 +342,26 @@ class RestaurantManagementTests(TestCase):
             'price': '180.00',
         })
         dish = Dish.objects.get(name='Burger')
+        self.assertEqual(dish.restaurant, target_restaurant)
         orderable_item = CartOfMenu.objects.get(catalog_dish=dish)
 
+        customer = get_user_model().objects.create_user(
+            username='customer',
+            password='password',
+        )
+        CustomerProfile.objects.create(user=customer, city='Львів')
+        self.client.force_login(customer)
+        home_response = self.client.get(reverse('home'))
+        self.assertContains(home_response, target_restaurant.name)
+        self.assertNotContains(home_response, self.restaurant.name)
         menu_response = self.client.get(
-            reverse('restaurant_menu', args=[self.restaurant.pk]),
+            reverse('restaurant_menu', args=[target_restaurant.pk]),
         )
         self.assertContains(
             menu_response,
             reverse('place_order', args=[orderable_item.pk]),
         )
 
-        customer = get_user_model().objects.create_user(
-            username='customer',
-            password='password',
-        )
-        self.client.force_login(customer)
         order_response = self.client.post(
             reverse('place_order', args=[orderable_item.pk]),
             {
@@ -361,6 +376,54 @@ class RestaurantManagementTests(TestCase):
 
         self.assertEqual(order_response.status_code, 200)
         self.assertEqual(Delivery.objects.get().cart, orderable_item)
+
+    def test_owner_can_move_catalog_dish_to_another_owned_restaurant(self):
+        target_restaurant = RestorantInfo.objects.create(
+            owner=self.owner,
+            name='Lviv Bistro',
+            city='Львів',
+            address='Market street',
+            phone_number='+380501234569',
+            opening_hours='09:00-21:00',
+        )
+        dish = Dish.objects.create(
+            restaurant=self.restaurant,
+            name='Soup',
+            dish_type='Ukrainian',
+            ingridients='Vegetables',
+            weight='300 g',
+            time_to_cook=15,
+            price=120,
+        )
+        orderable_item = CartOfMenu.objects.create(
+            catalog_dish=dish,
+            restaurant=self.restaurant,
+            name=dish.name,
+            ingridients=dish.ingridients,
+            weight=300,
+            time_to_cook=dish.time_to_cook,
+            price=dish.price,
+        )
+        self.client.force_login(self.owner)
+
+        response = self.client.post(
+            reverse('edit_catalog_dish', args=[dish.pk]),
+            {
+                'restaurant': target_restaurant.pk,
+                'name': dish.name,
+                'dish_type': dish.dish_type,
+                'ingridients': dish.ingridients,
+                'weight': dish.weight,
+                'time_to_cook': dish.time_to_cook,
+                'price': dish.price,
+            },
+        )
+
+        self.assertRedirects(response, reverse('restaurant_home'))
+        dish.refresh_from_db()
+        orderable_item.refresh_from_db()
+        self.assertEqual(dish.restaurant, target_restaurant)
+        self.assertEqual(orderable_item.restaurant, target_restaurant)
 
     def test_shop_owner_adds_product_with_product_type_model(self):
         self.restaurant.business_type = 'home'

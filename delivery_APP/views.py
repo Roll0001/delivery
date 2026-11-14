@@ -457,11 +457,13 @@ def add_dish(request):
     business_type = _business_type_for_owner(request.user, restaurant)
     is_restaurant = not business_type or business_type == 'restaurant'
     item_form = DishForm if is_restaurant else ProductTypeForm
-    form = item_form(request.POST or None, request.FILES or None)
+    form_kwargs = {'user': request.user} if is_restaurant else {}
+    form = item_form(request.POST or None, request.FILES or None, **form_kwargs)
     if request.method == 'POST' and form.is_valid():
         with transaction.atomic():
             item = form.save(commit=False)
-            item.restaurant = restaurant
+            if not is_restaurant:
+                item.restaurant = restaurant
             item.save()
             if is_restaurant:
                 _sync_orderable_dish(item)
@@ -485,7 +487,10 @@ def edit_catalog_item(request, item_id, model, item_form, is_restaurant):
         model.objects.filter(restaurant__owner=request.user),
         pk=item_id,
     )
-    form = item_form(request.POST or None, request.FILES or None, instance=item)
+    form_kwargs = {'instance': item}
+    if item_form is DishForm:
+        form_kwargs['user'] = request.user
+    form = item_form(request.POST or None, request.FILES or None, **form_kwargs)
     if request.method == 'POST' and form.is_valid():
         with transaction.atomic():
             item = form.save()
