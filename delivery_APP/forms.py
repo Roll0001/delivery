@@ -9,6 +9,7 @@ from .models import (
     ProductType,
     RestaurantApplication,
     RestorantInfo,
+    weight_in_grams,
 )
 
 
@@ -93,6 +94,16 @@ class RestorantInfoForm(forms.ModelForm):
 
 
 class DishForm(forms.ModelForm):
+    def clean_weight(self):
+        weight = self.cleaned_data['weight'].strip()
+        try:
+            weight_in_grams(weight)
+        except ValueError as exc:
+            raise forms.ValidationError(
+                'Вага має містити числове значення, наприклад 450 г або 1 кг.'
+            ) from exc
+        return weight
+
     class Meta:
         model = Dish
         fields = ['name', 'photo', 'dish_type', 'ingridients', 'weight', 'time_to_cook', 'price']

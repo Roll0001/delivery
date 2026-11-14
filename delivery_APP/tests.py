@@ -316,7 +316,51 @@ class RestaurantManagementTests(TestCase):
         dish = Dish.objects.get()
         self.assertEqual(dish.restaurant, self.restaurant)
         self.assertEqual(dish.name, 'Burger')
+        orderable_item = CartOfMenu.objects.get(catalog_dish=dish)
+        self.assertEqual(orderable_item.weight, 250)
+        self.assertEqual(orderable_item.price, dish.price)
         self.assertContains(self.client.get(reverse('restaurant_home')), 'Burger')
+
+    def test_customer_can_order_dish_added_by_restaurant_owner(self):
+        self.client.force_login(self.owner)
+        self.client.post(reverse('create_dish'), {
+            'name': 'Burger',
+            'dish_type': 'Burger',
+            'ingridients': 'Beef, bun',
+            'weight': '250 g',
+            'time_to_cook': '15',
+            'price': '180.00',
+        })
+        dish = Dish.objects.get(name='Burger')
+        orderable_item = CartOfMenu.objects.get(catalog_dish=dish)
+
+        menu_response = self.client.get(
+            reverse('restaurant_menu', args=[self.restaurant.pk]),
+        )
+        self.assertContains(
+            menu_response,
+            reverse('place_order', args=[orderable_item.pk]),
+        )
+
+        customer = get_user_model().objects.create_user(
+            username='customer',
+            password='password',
+        )
+        self.client.force_login(customer)
+        order_response = self.client.post(
+            reverse('place_order', args=[orderable_item.pk]),
+            {
+                'name': 'Олена',
+                'address': 'Main street 1',
+                'city': 'Львів',
+                'phone_number': '+380501234567',
+                'quantity': '1',
+                'payment_method': 'tothecourier',
+            },
+        )
+
+        self.assertEqual(order_response.status_code, 200)
+        self.assertEqual(Delivery.objects.get().cart, orderable_item)
 
     def test_shop_owner_adds_product_with_product_type_model(self):
         self.restaurant.business_type = 'home'

@@ -17,7 +17,30 @@ from .forms import (
     RestaurantApplicationForm,
     RestorantInfoForm,
 )
-from .models import CartOfMenu, Delivery, Dish, ProductType, RestaurantApplication, RestorantInfo
+from .models import (
+    CartOfMenu,
+    Delivery,
+    Dish,
+    ProductType,
+    RestaurantApplication,
+    RestorantInfo,
+    weight_in_grams,
+)
+
+
+def _sync_orderable_dish(dish):
+    CartOfMenu.objects.update_or_create(
+        catalog_dish=dish,
+        defaults={
+            'restaurant': dish.restaurant,
+            'name': dish.name,
+            'photo': dish.photo.name if dish.photo else '',
+            'ingridients': dish.ingridients,
+            'weight': weight_in_grams(dish.weight),
+            'time_to_cook': dish.time_to_cook,
+            'price': dish.price,
+        },
+    )
 
 
 def _business_type_for_owner(owner, restaurant):
@@ -121,6 +144,7 @@ def restaurant_home(request):
             dishes = Dish.objects.filter(restaurant__owner=request.user).select_related('restaurant').order_by('name')
             legacy_dishes = CartOfMenu.objects.filter(
                 restaurant__owner=request.user,
+                catalog_dish__isnull=True,
             ).select_related('restaurant').order_by('-price')
         else:
             products = ProductType.objects.filter(
@@ -315,6 +339,7 @@ def restaurant_menu(request, restaurant_id):
     dishes = CartOfMenu.objects.filter(restaurant=restaurant).order_by('name')
     catalog_dishes = Dish.objects.filter(
         restaurant=restaurant,
+        orderable_item__isnull=True,
     ).exclude(
         name__in=dishes.values('name'),
     ).order_by('name')
@@ -434,9 +459,12 @@ def add_dish(request):
     item_form = DishForm if is_restaurant else ProductTypeForm
     form = item_form(request.POST or None, request.FILES or None)
     if request.method == 'POST' and form.is_valid():
-        item = form.save(commit=False)
-        item.restaurant = restaurant
-        item.save()
+        with transaction.atomic():
+            item = form.save(commit=False)
+            item.restaurant = restaurant
+            item.save()
+            if is_restaurant:
+                _sync_orderable_dish(item)
         return redirect('restaurant_home')
     return render(request, 'createdish.html', {
         'form': form,
@@ -459,7 +487,10 @@ def edit_catalog_item(request, item_id, model, item_form, is_restaurant):
     )
     form = item_form(request.POST or None, request.FILES or None, instance=item)
     if request.method == 'POST' and form.is_valid():
-        form.save()
+        with transaction.atomic():
+            item = form.save()
+            if model is Dish:
+                _sync_orderable_dish(item)
         return redirect('restaurant_home')
     return render(request, 'createdish.html', {
         'form': form,
@@ -486,7 +517,10 @@ def edit_dish(request, dish_id):
         return redirect('home')
 
     dish = get_object_or_404(
-        CartOfMenu.objects.filter(restaurant__owner=request.user),
+        CartOfMenu.objects.filter(
+            restaurant__owner=request.user,
+            catalog_dish__isnull=True,
+        ),
         pk=dish_id,
     )
     form = MenuDishForm(
@@ -516,7 +550,10 @@ def delete_dish(request, dish_id):
         return redirect('home')
 
     dish = get_object_or_404(
-        CartOfMenu.objects.filter(restaurant__owner=request.user),
+        CartOfMenu.objects.filter(
+            restaurant__owner=request.user,
+            catalog_dish__isnull=True,
+        ),
         pk=dish_id,
     )
     dish.delete()

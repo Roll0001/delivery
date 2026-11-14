@@ -119,13 +119,14 @@ class Command(BaseCommand):
                 created += 1
                 for dname, ingr, weight, minutes, price in items:
                     seed = f"{city}{name}{dname}"
-                    Dish.objects.create(
+                    dish = Dish.objects.create(
                         restaurant=place, name=dname, photo=placeholder(seed),
                         dish_type=kind, ingridients=ingr[:100], weight=weight,
                         time_to_cook=minutes, price=Decimal(price),
                     )
                     CartOfMenu.objects.create(
-                        restaurant=place, name=dname, photo=placeholder(seed),
+                        catalog_dish=dish, restaurant=place, name=dname,
+                        photo=dish.photo.name,
                         ingridients=ingr, weight=Decimal(self._grams(weight)),
                         time_to_cook=minutes, price=Decimal(price),
                     )

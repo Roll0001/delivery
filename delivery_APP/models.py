@@ -1,8 +1,26 @@
+import re
 import uuid
+from decimal import Decimal, ROUND_HALF_UP
 
 from django.db import models
 from django.conf import settings
 from django.utils import timezone
+
+
+def weight_in_grams(value):
+    match = re.search(r'\d+(?:[.,]\d+)?', str(value))
+    if not match:
+        raise ValueError('Weight must contain a numeric amount.')
+
+    weight = Decimal(match.group().replace(',', '.'))
+    if 'кг' in str(value).lower():
+        weight *= 1000
+    if weight <= 0 or weight > 10000000:
+        raise ValueError('Weight is outside the supported range.')
+    weight = weight.quantize(Decimal('1'), rounding=ROUND_HALF_UP)
+    if weight <= 0 or weight > 9999999:
+        raise ValueError('Weight is outside the supported range.')
+    return weight
 
 
 CITY_CHOICES = [
@@ -213,6 +231,13 @@ class ProductType(models.Model):
         return self.name
 
 class CartOfMenu(models.Model):
+    catalog_dish = models.OneToOneField(
+        'Dish',
+        on_delete=models.CASCADE,
+        related_name='orderable_item',
+        null=True,
+        blank=True,
+    )
     restaurant = models.ForeignKey(
         'RestorantInfo',
         on_delete=models.CASCADE,
@@ -220,7 +245,7 @@ class CartOfMenu(models.Model):
         null=True,
         blank=True,
     )
-    name = models.CharField(max_length=100)
+    name = models.CharField(max_length=200)
     photo = models.ImageField(upload_to='media/dish_photos/', blank=True, default='')
     ingridients = models.TextField()
     weight = models.DecimalField(max_digits=7, decimal_places=0)
